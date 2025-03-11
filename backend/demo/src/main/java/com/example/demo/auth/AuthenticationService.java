@@ -1,6 +1,5 @@
 package com.example.demo.auth;
 
-import java.util.UUID;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,13 +21,14 @@ public class AuthenticationService {
         private final JwtService jwtService;
         private final AuthenticationManager authenticationManager;
 
+        
         public AuthenticationResponse register(RegisterRequest request) {
                 var user = User.builder()
                                 .firstname(request.getFirstname())
                                 .lastname(request.getLastname())
                                 .email(request.getEmail())
                                 .password(passwordEncoder.encode(request.getPassword()))
-                                .role(Role.USER)
+                                .role(Role.CLIENT)
                                 .build();
                 userRepo.save(user); // Save the user to the database
 
