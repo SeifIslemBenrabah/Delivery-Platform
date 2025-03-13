@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class AuthenticationResponse {
-    private String token;
+public class RefreshTokenRequest {
     private String refreshToken;
 }

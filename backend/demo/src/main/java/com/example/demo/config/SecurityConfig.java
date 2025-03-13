@@ -12,6 +12,8 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
 
 import com.example.demo.Entity.Role;
 import com.example.demo.Entity.User;
@@ -79,6 +81,18 @@ public class SecurityConfig {
                     // Redirect with JWT token
                     response.sendRedirect("http://localhost:8080/api/v1/demo-controller?token=" + jwtToken);
                 })
+            )
+            .logout(logout -> logout
+                .logoutUrl("/api/v1/auth/logout") // Logout endpoint
+                .addLogoutHandler((LogoutHandler) (request, response, authentication) -> {
+                    // Invalidate the token (you can add more logic here if needed)
+                    String authHeader = request.getHeader("Authorization");
+                    if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                        String token = authHeader.substring(7);
+                        jwtService.invalidateToken(token); // Invalidate the token
+                    }
+                })
+                .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.OK)) // Return 200 on success
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Add JWT filter
 
