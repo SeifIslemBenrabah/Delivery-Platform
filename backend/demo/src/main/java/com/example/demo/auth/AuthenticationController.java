@@ -43,9 +43,11 @@ public class AuthenticationController {
         // Check if user exists, if not, create them
         var user = userRepo.findByEmail(email).orElseGet(() -> {
             User newUser = User.builder()
-                    .firstname("GoogleUser")
-                    .lastname("")
+                    .firstName("GoogleUser")
+                    .lastName("")
                     .email(email)
+                    .phone(0)
+                    .address(null)
                     .password("") // Google users don't have local passwords
                     .role(Role.CLIENT)
                     .build();

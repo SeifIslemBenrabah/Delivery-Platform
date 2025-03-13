@@ -1,5 +1,10 @@
 package com.example.demo.Entity;
 
-public class Address {
+import java.io.Serializable;
+
+public class Address implements Serializable {
+
+    public Number longitude;
+    public Number latitude;
     
 }
