@@ -1,16 +1,16 @@
 package com.example.demo.auth;
 
+import com.example.demo.Entity.*;
+import com.example.demo.Repo.UserRepo;
+import com.example.demo.config.JwtService;
+import lombok.RequiredArgsConstructor;
+
+import java.util.Set;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import com.example.demo.Entity.Role;
-import com.example.demo.Entity.User;
-import com.example.demo.Repo.UserRepo;
-import com.example.demo.config.JwtService;
-
-import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -28,35 +28,78 @@ public class AuthenticationService {
                 .phone(0)
                 .address(null)
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.CLIENT)
+                .roles(Set.of(Role.CLIENT)) // Default role is CLIENT
                 .build();
-        userRepo.save(user); // Save the user to the database
+        userRepo.save(user);
 
-        var jwtToken = jwtService.generateToken(user); // Generate a JWT token for the user
-        var refreshToken = jwtService.generateRefreshToken(user); // Generate a refresh token
+        var jwtToken = jwtService.generateToken(user);
+        var refreshToken = jwtService.generateRefreshToken(user); // Generate refresh token
         return AuthenticationResponse.builder()
                 .token(jwtToken)
-                .refreshToken(refreshToken)
+                .refreshToken(refreshToken) // Include refresh token in the response
                 .build();
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        // Authenticate the user using Spring Security's AuthenticationManager
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
                         request.getPassword()));
 
-        // If authentication is successful, load the user from the database
         var user = userRepo.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Generate a JWT token for the authenticated user
         var jwtToken = jwtService.generateToken(user);
-        var refreshToken = jwtService.generateRefreshToken(user);
+        var refreshToken = jwtService.generateRefreshToken(user); // Generate refresh token
         return AuthenticationResponse.builder()
                 .token(jwtToken)
-                .refreshToken(refreshToken)
+                .refreshToken(refreshToken) // Include refresh token in the response
                 .build();
+    }
+
+    public AuthenticationResponse refreshToken(RefreshTokenRequest request) {
+        String refreshToken = request.getRefreshToken();
+        String username = jwtService.extractUsername(refreshToken);
+
+        if (username != null && jwtService.isTokenValid(refreshToken, userRepo.findByEmail(username).orElseThrow())) {
+            var user = userRepo.findByEmail(username).orElseThrow();
+            var newToken = jwtService.generateToken(user);
+            var newRefreshToken = jwtService.generateRefreshToken(user); // Generate new refresh token
+            return AuthenticationResponse.builder()
+                    .token(newToken)
+                    .refreshToken(newRefreshToken) // Include new refresh token in the response
+                    .build();
+        }
+        throw new RuntimeException("Invalid refresh token");
+    }
+
+    public void upgradeToLivreur(Long userId, LivreurRequest livreurRequest) {
+        var user = userRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        var livreur = Livreur.builder()
+                .cartNationalId(livreurRequest.getCartNationalId())
+                .vehiclePapiers(livreurRequest.getVehiclePapiers())
+                .user(user)
+                .build();
+
+        user.setLivreur(livreur);
+        user.getRoles().add(Role.LIVREUR); // Add LIVREUR role
+        userRepo.save(user);
+    }
+
+    public void upgradeToCommercant(Long userId, CommercantRequest commercantRequest) {
+        var user = userRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        var commercant = Commercant.builder()
+                .cartNationalId(commercantRequest.getCartNationalId())
+                .type(commercantRequest.getType())
+                .user(user)
+                .build();
+
+        user.setCommercant(commercant);
+        user.getRoles().add(Role.COMMERCANT); // Add COMMERCANT role
+        userRepo.save(user);
     }
 }

@@ -21,6 +21,8 @@ import com.example.demo.Repo.UserRepo;
 
 import lombok.RequiredArgsConstructor;
 
+import java.util.Set;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -70,7 +72,7 @@ public class SecurityConfig {
                                 .phone(0)
                                 .address(null)
                                 .password("")
-                                .role(Role.CLIENT)
+                                .roles(Set.of(Role.CLIENT)) // Initialize roles as a Set
                                 .build();
                         return userRepo.save(newUser);
                     });
