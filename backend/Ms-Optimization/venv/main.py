@@ -1,4 +1,5 @@
-from fastapi import FastAPI # type: ignore
+from http.client import HTTPException
+from fastapi import FastAPI,Request # type: ignore
 import random
 import requests # type: ignore
 import networkx as nx # type: ignore
@@ -13,8 +14,46 @@ import os
 from geopy.distance import geodesic # type: ignore
 from itertools import permutations
 
+
 API_KEY = "sZF4eMOpH75UjsLAcaDX8a6VvmQpEkcdND_b_Tspz7M"
+clusters=[
+        {
+            "idLivreur": 1,
+            "position":(35.20984050039089, -0.6332611355164397),
+            "Commandes": [
+            ],
+            "charge":1,
+            "refus":1,
+            "trajet":[]
+        },
+        {
+            "idLivreur": 2,
+            "position":(35.193810376335115, -0.6330894741016845),
+            "Commandes": [
+
+
+
+            ],
+            "charge":1,
+            "refus":1,
+            "trajet":[]
+        },
+        {
+            "idLivreur": 3,
+            "position":(35.18370280260782, -0.6468599346781924),
+            "Commandes": [
+
+            ],
+            "charge":1,
+            "refus":1,
+            "trajet":[]
+        }
+    ]
+
 app = FastAPI()
+
+def get_livreur_by_id(id, clusters):
+    return next((c for c in clusters if c["idLivreur"] == id), None)
 
 def normalize(x,max):
   if(max==0): return 0
@@ -209,6 +248,24 @@ def best_route(livreur):
     else:
         print("❌ Aucun chemin valide trouvé !")
 
+
+
+
+@app.post("/new_order")
+async def add_order():
+    order = await Request.json()
+    i=predict(order,clusters)
+    clusters[i]["Commandes"].append(order)
+    generate_map(clusters)
+    best_route(clusters[i])
+
+@app.get("/route/{id}")
+async def get_route(id: int):
+    livreur = get_livreur_by_id(id, clusters)
+    if livreur is None:
+        raise HTTPException(status_code=404, detail="Livreur non trouvé")
+    return {"trajet": livreur["trajet"]}
+    
 
 @app.get("/")
 def read_root():
