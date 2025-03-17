@@ -16,7 +16,7 @@ const CommandeSchema = new Schema({
     },
     statusCommande: {
         type: String,
-        enum: ["En cours", "Validée", "Annulée"], 
+        enum: ["En cours", "Validée", "Annulée","en livraison","Livré"], 
         default: "En cours"
     },
     Livraisontype: {

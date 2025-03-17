@@ -1,27 +1,43 @@
 const Commande = require("../models/Commande");
 const mongoose = require("mongoose");
+const axios = require('axios');
+async function getUserDetails(userId) {
+  try {
+      const response = await axios.get(`http://localhost:5001/users/${userId}`);
+      return response.data;
+  } catch (error) {
+      console.error('Error fetching user data:', error);
+      return null;
+  }
+}
 const createCommande = async (req, res) => {
   try {
-    const {
-      PickUpAddress,
-      DropOffAddress,
-      Livraisontype,
-      idClient,
-      produits,
-    } = req.body;
+    let { PickUpAddress, DropOffAddress, Livraisontype, idClient, produits } = req.body;
 
-    if (!PickUpAddress || !DropOffAddress || !Livraisontype || !idClient || !produits) {
+    if (!DropOffAddress || !Livraisontype || !idClient || !produits) {
       return res.status(400).json({ message: "Missing required fields!" });
     }
+
+    // Fetch user details if PickUpAddress is not provided
+    if (!PickUpAddress) {
+      const userDetails = await getUserDetails(idClient);
+      if (!userDetails || !userDetails.PickUpAddress) {
+        return res.status(400).json({ message: "Invalid client ID or missing PickUpAddress!" });
+      }
+      PickUpAddress = userDetails.PickUpAddress;
+    }
+
+    // Validate and format product data
     const formattedProduits = produits.map((item) => {
-        if (!mongoose.Types.ObjectId.isValid(item.produit)) {
-          throw new Error(`Invalid product ID: ${item.produit}`);
-        }
-        return {
-          produit: new mongoose.Types.ObjectId(item.produit),
-          quantity: item.quantity
-        };
-      });
+      if (!mongoose.Types.ObjectId.isValid(item.produit)) {
+        return res.status(400).json({ message: `Invalid product ID: ${item.produit}` });
+      }
+      return {
+        produit: new mongoose.Types.ObjectId(item.produit),
+        quantity: item.quantity
+      };
+    });
+
     const newCommande = new Commande({
       PickUpAddress,
       DropOffAddress,
@@ -30,14 +46,15 @@ const createCommande = async (req, res) => {
       produits: formattedProduits,
     });
 
-    
     await newCommande.save();
 
     res.status(201).json({ message: "Commande created successfully!", commande: newCommande });
   } catch (error) {
+    console.error("Error creating Commande:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 const getAllCommandes = async (req, res) => {
   try {
