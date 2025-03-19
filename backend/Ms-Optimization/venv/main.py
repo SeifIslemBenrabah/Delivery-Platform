@@ -13,40 +13,66 @@ from itertools import permutations
 import os
 from geopy.distance import geodesic # type: ignore
 from itertools import permutations
+from pydantic import BaseModel
+from typing import List
+from motor.motor_asyncio import AsyncIOMotorClient
+import asyncio
+
+MONGO_URI = "mongodb://admin:secret@localhost:27017/?authSource=admin"
+client = AsyncIOMotorClient(MONGO_URI)
+db = client["Optimization"]
+collection = db["livreurs"]
+
+async def test_connection():
+    try:
+        # Vérifie si MongoDB est accessible
+        await client.admin.command("ping")
+        print("✅ Connexion à MongoDB réussie !")
+
+        # Teste l'accès à la base de données "mydb"
+        collections = await db.list_collection_names()
+        print(f"📂 Collections disponibles dans 'mydb' : {collections}")
+
+    except Exception as e:
+        print(f"❌ Erreur de connexion à MongoDB : {e}")
+
+
+class Livreur(BaseModel):
+    id: int
+    commandes: List[int]  # Only store IDs
+    trajet: List[tuple] = []  # Default t
 
 
 API_KEY = "sZF4eMOpH75UjsLAcaDX8a6VvmQpEkcdND_b_Tspz7M"
-clusters=[
+
+async def getliv(livreur_id: int):
+    livreur = await collection.find_one({"id": livreur_id})
+    
+    if livreur:
+        return livreur  # Return existing livreur
+    
+    # If not found, create a new livreur with default values
+    new_livreur = {
+        "id": livreur_id,
+        "commandes": [],
+        "trajet": []
+    }
+    
+    await collection.insert_one(new_livreur)
+    return new_livreur
+
+livreurs=[
         {
             "idLivreur": 1,
             "position":(35.20984050039089, -0.6332611355164397),
-            "Commandes": [
-            ],
-            "charge":1,
-            "refus":1,
-            "trajet":[]
         },
         {
             "idLivreur": 2,
             "position":(35.193810376335115, -0.6330894741016845),
-            "Commandes": [
-
-
-
-            ],
-            "charge":1,
-            "refus":1,
-            "trajet":[]
         },
         {
             "idLivreur": 3,
             "position":(35.18370280260782, -0.6468599346781924),
-            "Commandes": [
-
-            ],
-            "charge":1,
-            "refus":1,
-            "trajet":[]
         }
     ]
 
@@ -249,19 +275,42 @@ def best_route(livreur):
         print("❌ Aucun chemin valide trouvé !")
 
 
-
+async def update_liv(livreur):
+    query_filter={"idLivreur":livreur.idLivreur}
+    update_operation={'$set':[
+        {'trajet':livreur.trajet},{'commandes':livreur.commandes}
+    ]}
+    await collection.update_one(query_filter, update_operation)
 
 @app.post("/new_order")
-async def add_order():
-    order = await Request.json()
-    i=predict(order,clusters)
-    clusters[i]["Commandes"].append(order)
-    generate_map(clusters)
-    best_route(clusters[i])
+async def add_order(request:Request):
+    url_cmd="http://localhost:5000/commandes"
+    url_livreur=""
+    response = requests.get(url_cmd)
+
+    if response.status_code == 200:
+      all_commandes = response.json()
+     #r=request.get(url_livreur)
+     #if r.status_code==200:
+      #all_livreurs=response.json()
+      print(all_commandes["commandes"])
+      
+      clusters=await generate_data(all_commandes["commandes"],livreurs)
+      print(clusters)
+      '''
+      print(clusters)
+      order = await request.json()
+      print(order)
+      i=predict(order,clusters)
+      clusters[i]["Commandes"].append(order)
+      generate_map(clusters)
+      best_route(clusters[i])
+      update_liv(clusters[i])
+      '''
 
 @app.get("/route/{id}")
 async def get_route(id: int):
-    livreur = get_livreur_by_id(id, clusters)
+    livreur = await collection.find_one({"id": id})
     if livreur is None:
         raise HTTPException(status_code=404, detail="Livreur non trouvé")
     return {"trajet": livreur["trajet"]}
@@ -269,4 +318,140 @@ async def get_route(id: int):
 
 @app.get("/")
 def read_root():
+    asyncio.run(test_connection())
+
     return {"message": "Hello, FastAPI!"}
+
+
+
+
+'''
+[
+   {
+      id_livreur
+      trajet
+      commandes:[1,2,3]
+   }
+   {
+      ..
+   }
+]
+
+
+dispo_livreurs
+[
+   {
+      id_livreur
+      pos()
+   }
+   {
+      ....
+   }
+]
+
+commandes_encours
+[
+   
+   {
+      id
+      posd
+      posf
+   }
+]
+
+clusters
+[
+   {
+      idliverur
+      pos
+      commandes:
+      {
+         id
+         posd
+         posf
+      }
+      trajet
+   }
+]
+
+livreurs [
+{
+  "id":1
+  "pos":
+
+}
+
+]
+ [
+        {
+            "idLivreur": 1,
+            "position":(35.20984050039089, -0.6332611355164397),
+            "Commandes": [
+            ],
+            "charge":1,
+            "refus":1,
+            "trajet":[]
+        },
+        {
+            "idLivreur": 2,
+            "position":(35.193810376335115, -0.6330894741016845),
+            "Commandes": [
+
+
+
+            ],
+            "charge":1,
+            "refus":1,
+            "trajet":[]
+        },
+        {
+            "idLivreur": 3,
+            "position":(35.18370280260782, -0.6468599346781924),
+            "Commandes": [
+
+            ],
+            "charge":1,
+            "refus":1,
+            "trajet":[]
+        }
+    ]
+'''
+async def generate_data(commandes, livreurs):
+    clu = []
+    
+    for liv in livreurs:
+        livdb = await getliv(liv["idLivreur"])  # Fetch livreur details
+        
+        # Ensure livdb.commandes is a set for faster lookup
+        liv_commandes = set(livdb["commandes"]) if livdb["commandes"] else set()
+
+        temp = {
+            "idlivreur": liv["idLivreur"],
+            "pos": liv["position"],
+            "commandes": [],
+            "trajet": livdb["trajet"] if "trajet" in livdb else []
+        }
+
+        for cmd in commandes:
+            if cmd["_id"] in liv_commandes: 
+             temp["commandes"].append({
+                "idCommande":cmd["_id"],
+                "depart":(cmd["PickUpAddress"]["longitude"],cmd["PickUpAddress"]["latitude"]),
+                "arrivee":(cmd["DropOffAddress"]["longitude"],cmd["DropOffAddress"]["latitude"])
+             })
+
+        clu.append(temp)
+
+    return clu
+
+
+
+      
+# update livreur
+
+
+def generate_table(commandes):
+    return [cmd.idCommande for cmd in commandes]
+    
+
+       
