@@ -336,7 +336,7 @@ async def get_route(id: int):
     print(livreur)
     if livreur is None:
         raise HTTPException(status_code=404, detail="Livreur non trouvé")
-    return {"trajet": livreur["trajet"]}
+    return {"trajet": livreur["trajet"],"commandes":livreur["commandes"]}
     
 
 @app.get("/")
