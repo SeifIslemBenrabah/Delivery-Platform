@@ -61,6 +61,8 @@ async def getliv(livreur_id: int):
     await collection.insert_one(new_livreur)
     return new_livreur
 
+
+
 livreurs=[
         {
             "idLivreur": 1,
@@ -135,16 +137,16 @@ def predict(nouvelle_commande, clu):
     max_distance = np.max(distances)
     #max_distance_liv = np.max(dist_liv)
     #print(max_distance_liv)
-    max_charge = max(livreur["charge"] for livreur in clu)
-    max_refus = max(livreur["refus"] for livreur in clu)
+    #max_charge = max(livreur["charge"] for livreur in clu)
+    #max_refus = max(livreur["refus"] for livreur in clu)
     print(distances)
     scores = np.zeros(len(clu))  # Initialisation des scores
 
     for i, cluster in enumerate(clu):
         scores[i] = (
             normalize(distances[i],max_distance)
-            + normalize(cluster["charge"], max_charge)
-            + normalize(cluster["refus"], max_refus)
+           # + normalize(cluster["charge"], max_charge)
+           # + normalize(cluster["refus"], max_refus)
         )
     print(scores)
     return np.argmin(scores)
@@ -177,13 +179,13 @@ def generate_map(data):
         fill=True,
         fill_color="blue",
         fill_opacity=0.2,
-        popup=f"Livreur {livreur['idLivreur']} (rayon: {int(max_distance + 100)}m)"
+        popup=f"Livreur {livreur['idlivreur']} (rayon: {int(max_distance + 100)}m)"
     ).add_to(carte)
 
     # Ajouter un marqueur pour le livreur
     folium.Marker(
         location=livreur["position"],
-        popup=f"Livreur {livreur['idLivreur']}",
+        popup=f"Livreur {livreur['idlivreur']}",
         icon=folium.Icon(color="blue", icon="user")
     ).add_to(carte)
 
@@ -209,7 +211,7 @@ def generate_map(data):
         ).add_to(carte)
 
   # Sauvegarde et affichage de la carte
-  map_path = "/content/livreurs_map.html"
+  map_path = "/livreurs_map.html"
   carte.save(map_path)
   display(IFrame(map_path, width=800, height=500))
 
@@ -232,6 +234,7 @@ def valide_ordre(ordre, commandes_index):
 def best_route(livreur):
     """
     Calcule le meilleur trajet pour un livreur en respectant l'ordre Départ -> Arrivée.
+    Retourne la liste des positions dans l'ordre optimal.
     """
     # 📍 Création des points (le livreur en premier)
     points = [livreur['position']]
@@ -270,17 +273,33 @@ def best_route(livreur):
 
         print("\n🏆 Meilleur chemin trouvé :")
         print(" → ".join([commandes_index[i] for i in best_path]))
-        livreur['trajet'] = best_path
+
+        # Convertir indices en positions GPS
+        livreur['trajet'] = [points[i] for i in best_path]
     else:
         print("❌ Aucun chemin valide trouvé !")
+        livreur['trajet'] = []
+
+    return livreur['trajet']  # Retourne directement les positions GPS
 
 
 async def update_liv(livreur):
-    query_filter={"idLivreur":livreur.idLivreur}
-    update_operation={'$set':[
-        {'trajet':livreur.trajet},{'commandes':livreur.commandes}
-    ]}
+    query_filter = {"id": livreur["idlivreur"]}
+    print(livreur["trajet"])
+
+    # 🔹 Extraire seulement les ID des commandes
+    commandes_ids = list({c["idCommande"] for c in livreur["Commandes"]})  # Convertir en liste
+
+    update_operation = {
+        "$set": {
+            "trajet": livreur["trajet"],  # ✅ Correct
+            "commandes": commandes_ids  # ✅ Liste des ID seulement
+        }
+    }
+
     await collection.update_one(query_filter, update_operation)
+
+
 
 @app.post("/new_order")
 async def add_order(request:Request):
@@ -293,24 +312,28 @@ async def add_order(request:Request):
      #r=request.get(url_livreur)
      #if r.status_code==200:
       #all_livreurs=response.json()
-      print(all_commandes["commandes"])
+      
       
       clusters=await generate_data(all_commandes["commandes"],livreurs)
       print(clusters)
-      '''
-      print(clusters)
       order = await request.json()
       print(order)
+      
       i=predict(order,clusters)
+      print(i)
+      
       clusters[i]["Commandes"].append(order)
-      generate_map(clusters)
+     # generate_map(clusters)
       best_route(clusters[i])
-      update_liv(clusters[i])
-      '''
+      await update_liv(clusters[i])
+      
+      
 
 @app.get("/route/{id}")
 async def get_route(id: int):
+    await getliv(99)
     livreur = await collection.find_one({"id": id})
+    print(livreur)
     if livreur is None:
         raise HTTPException(status_code=404, detail="Livreur non trouvé")
     return {"trajet": livreur["trajet"]}
@@ -427,14 +450,14 @@ async def generate_data(commandes, livreurs):
 
         temp = {
             "idlivreur": liv["idLivreur"],
-            "pos": liv["position"],
-            "commandes": [],
+            "position": liv["position"],
+            "Commandes": [],
             "trajet": livdb["trajet"] if "trajet" in livdb else []
         }
 
         for cmd in commandes:
             if cmd["_id"] in liv_commandes: 
-             temp["commandes"].append({
+             temp["Commandes"].append({
                 "idCommande":cmd["_id"],
                 "depart":(cmd["PickUpAddress"]["longitude"],cmd["PickUpAddress"]["latitude"]),
                 "arrivee":(cmd["DropOffAddress"]["longitude"],cmd["DropOffAddress"]["latitude"])
