@@ -18,7 +18,7 @@ from typing import List
 from motor.motor_asyncio import AsyncIOMotorClient
 import asyncio
 
-MONGO_URI = "mongodb://admin:secret@localhost:27017/?authSource=admin"
+MONGO_URI = "mongodb://localhost:27017"
 client = AsyncIOMotorClient(MONGO_URI)
 db = client["Optimization"]
 collection = db["livreurs"]
