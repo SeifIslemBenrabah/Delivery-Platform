@@ -65,16 +65,16 @@ async def getliv(livreur_id: int):
 
 livreurs=[
         {
-            "idLivreur": 1,
-            "position":(35.20984050039089, -0.6332611355164397),
+            "livreurId": 1,
+            "location":(35.20984050039089, -0.6332611355164397),
         },
         {
-            "idLivreur": 2,
-            "position":(35.193810376335115, -0.6330894741016845),
+            "livreurId": 2,
+            "location":(35.193810376335115, -0.6330894741016845),
         },
         {
-            "idLivreur": 3,
-            "position":(35.18370280260782, -0.6468599346781924),
+            "livreurId": 3,
+            "location":(35.18370280260782, -0.6468599346781924),
         }
     ]
 
@@ -304,18 +304,21 @@ async def update_liv(livreur):
 @app.post("/new_order")
 async def add_order(request:Request):
     url_cmd="http://localhost:5000/commandes"
-    url_livreur=""
+    url_livreur="http://localhost:5010/livreursLocations"
     response = requests.get(url_cmd)
 
     if response.status_code == 200:
       all_commandes = response.json()
-     #r=request.get(url_livreur)
-     #if r.status_code==200:
-      #all_livreurs=response.json()
+      r=requests.get(url_livreur)
+      print(r)
+      
+      all_livreurs=r.json()['data']
+      print(all_livreurs)
       
       
-      clusters=await generate_data(all_commandes["commandes"],livreurs)
+      clusters=await generate_data(all_commandes["commandes"],all_livreurs)
       print(clusters)
+      
       order = await request.json()
       print(order)
       
@@ -326,6 +329,8 @@ async def add_order(request:Request):
      # generate_map(clusters)
       best_route(clusters[i])
       await update_liv(clusters[i])
+      
+      
       
       
 
@@ -443,14 +448,16 @@ async def generate_data(commandes, livreurs):
     clu = []
     
     for liv in livreurs:
-        livdb = await getliv(liv["idLivreur"])  # Fetch livreur details
+       
+        livdb = await getliv(liv["livreurId"])  # Fetch livreur details
         
         # Ensure livdb.commandes is a set for faster lookup
         liv_commandes = set(livdb["commandes"]) if livdb["commandes"] else set()
 
+
         temp = {
-            "idlivreur": liv["idLivreur"],
-            "position": liv["position"],
+            "idlivreur": int(liv["livreurId"]),
+            "position": (liv["location"]['latitude'],liv["location"]['longitude']),
             "Commandes": [],
             "trajet": livdb["trajet"] if "trajet" in livdb else []
         }
