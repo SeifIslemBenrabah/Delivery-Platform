@@ -83,6 +83,63 @@ app.post("/checkout/:id",async(req,res)=>{
   res.redirect(paiement.checkout_url)
 })
 
+const sequelize = require('./config/db');
+sequelize.sync({ force: true }) // Mettre `true` pour recréer les tables à chaque lancement
+    .then(async() =>{ console.log('✅ Tables synchronisées')
+    }
+)
+    .catch(err => console.error('❌ Erreur de synchronisation:', err));
+
+import bodyParser from 'body-parser';
+import { verifySignature } from '@chargily/chargily-pay';
+
+app.use(
+  bodyParser.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
+
+app.post('/webhook', (req, res) => {
+  const signature = req.get('signature') || '';
+  const payload = req.rawBody;
+
+  if (!signature) {
+    console.log('Signature header is missing');
+    res.sendStatus(400);
+    return;
+  }
+
+  try {
+    if (!verifySignature(payload, signature, API_SECRET_KEY)) {
+      console.log('Signature is invalid');
+      res.sendStatus(403);
+      return;
+    }
+  } catch (error) {
+    console.log(
+      'Something happened while trying to process the request to the webhook'
+    );
+    res.sendStatus(403);
+    return;
+  }
+
+  const event = req.body;
+  // You can use the event.type here to implement your own logic
+  console.log(event);
+
+  res.sendStatus(200);
+});
+
+//webhook success
+
+//webhook failure
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+
 /*
 
 le debut

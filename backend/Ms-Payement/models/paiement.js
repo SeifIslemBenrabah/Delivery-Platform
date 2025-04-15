@@ -1,5 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
+const Livreur = require('./livreur');
+const Commercent = require('./commercent');
 
 const Paiement = sequelize.define('Paiement', {
   id: {
@@ -27,8 +29,28 @@ const Paiement = sequelize.define('Paiement', {
     type: DataTypes.STRING,
     defaultValue:0
   },
+  id_livreur: {
+    type: DataTypes.INTEGER,
+    references: {
+        model: Livreur,
+        key: 'id'
+    },
+  },
+  id_commercent: {
+    type: DataTypes.INTEGER,
+    references: {
+        model: Commercent,
+        key: 'id'
+    },
+  },
 }, {
   timestamps: true, // Ajoute createdAt et updatedAt automatiquement
 });
+
+Livreur.hasMany(Paiement, { foreignKey: 'id_livreur', as: 'paiments' });
+Paiement.belongsTo(Livreur, { foreignKey: 'id_livreur', as: 'livreur'});
+
+Commercent.hasMany(Paiement, { foreignKey: 'id_commercent', as: 'paiments' });
+Paiement.belongsTo(Commercent, { foreignKey: 'id_commercent', as: 'commercent'});
 
 module.exports = Paiement;

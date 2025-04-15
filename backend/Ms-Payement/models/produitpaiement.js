@@ -14,7 +14,7 @@ const ProduitPaiement = sequelize.define('ProduitPaiement', {
     onUpdate: 'CASCADE',
   },
   id_produit: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING, // Changed this to match the type in Produit model
     references: {
       model: Produit,
       key: 'id',
@@ -23,11 +23,11 @@ const ProduitPaiement = sequelize.define('ProduitPaiement', {
     onUpdate: 'CASCADE',
   }
 }, {
-  timestamps: true, // Ajoute createdAt et updatedAt automatiquement
+  timestamps: true,
 });
 
-// Définition des relations Many-to-Many
-Paiement.belongsToMany(Produit, { through: ProduitPaiement, foreignKey: 'paiementId' });
-Produit.belongsToMany(Paiement, { through: ProduitPaiement, foreignKey: 'produitId' });
+// Define the many-to-many relationships
+Paiement.belongsToMany(Produit, { through: ProduitPaiement, foreignKey: 'id_paiement' });
+Produit.belongsToMany(Paiement, { through: ProduitPaiement, foreignKey: 'id_produit' });
 
 module.exports = ProduitPaiement;
