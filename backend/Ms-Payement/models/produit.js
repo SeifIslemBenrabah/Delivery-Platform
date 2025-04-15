@@ -3,7 +3,7 @@ const sequelize = require('../config/db');
 
 const Produit = sequelize.define('Produit', {
   id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.STRING,
     primaryKey: true,
   },
   chargily_id: {
