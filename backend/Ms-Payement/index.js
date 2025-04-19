@@ -2,13 +2,14 @@ const express = require("express");
 require("dotenv").config();
 const connectDB = require("./config/db"); 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5010;
 const {createCheckout,createPrice,createProduct}=require('./services/chargily.service')
 const Produit=require('./models/produit')
 const Paiment=require('./models/paiement')
 const ProduitPaiment=require('./models/produitpaiement')
 const getCommandeProducts=require("./services/ms_commandes.service");
 const { calculateCommercentPrice, calculateLivraisonPrice } = require("./utils/calculate");
+const client = require('./config/eureka-client');
 
 app.use(express.json());
 
@@ -25,27 +26,27 @@ const existingIds = dbProduits.map(p => p.id); // Extract IDs
 
 for (let product of products) {
     if (!existingIds.includes(product._id)) { // Corrected condition
-        let chargily_id = await createProduct({name:product.produit.name,description:product.produit.description});
+        let chargily_id = await createProduct({name:product.produit.nomProduit,description:"description"});
         await Produit.create({ id: product._id, chargily_id });
     }
 }
 
 dbProduits=await Produit.findAll()
-  
+
 
   // create payement table
 const paiement=await Paiment.create({id_commande:idCommande})  
 
   // link product with payement table
 const produitPaiement=dbProduits.map((p)=>{
-  return {id_produit:p.id,id_paiment:paiement.id}
+  return {id_produit:p.id,id_paiement:paiement.id}
 })
 
 await ProduitPaiment.bulkCreate(produitPaiement)
 
   //get products {id_chargily,price}
    let productsPrices=products.map(product => {
-    const dbProduct = dbProduits.find(p => p.idProduit === product._id);
+    const dbProduct = dbProduits.find(p => p.id === product._id);
     return {
         price: product.produit.price,
         quantity:product.quantity,
@@ -53,28 +54,36 @@ await ProduitPaiment.bulkCreate(produitPaiement)
     };
 });
 
+
   //get products {id_price,quantite}   
 
-let items=productsPrices.map(async(p)=>{
-    const priceId=await createPrice({idProduit:p.chargily_id})
+  let items = await Promise.all(productsPrices.map(async (p) => {
+    const priceId = await createPrice({ amount: p.price, idProduit: p.chargily_id });
     return {
-      quantity:p.quantity,priceId
-    }
-})
+      quantity: p.quantity,
+      price:priceId
+    };
+  }));
+
+
   //calculate livraison price and create id price
   const livraison_price=calculateLivraisonPrice()
   let livraison_id=await createProduct({name:"livraison"})
-  let livraison_price_id=await createPrice({product_id:livraison_id,price:livraison_price})
+  let livraison_price_id=await createPrice({idProduit:livraison_id,price:livraison_price})
   paiement.prix_livraison=livraison_price
+  
   //create checkout and calculate total price
   const commercent_price=calculateCommercentPrice(productsPrices)
+  console.log(commercent_price)
   paiement.prix_commercent=commercent_price
   paiement.prix_total=livraison_price+commercent_price
-  const checkout_url=await createCheckout([...items,{priceId:livraison_price_id}],payment_method)
+  
+  const checkout_url=await createCheckout([...items,{price:livraison_price_id,quantity:1}],payment_method)
   paiement.checkout_url=checkout_url
   await paiement.save()
   res.status(200).json({livraison_price,total:livraison_price+commercent_price})
   // return total price
+
 })
 
 app.post("/checkout/:id",async(req,res)=>{
@@ -90,8 +99,9 @@ sequelize.sync({ force: true }) // Mettre `true` pour recréer les tables à cha
 )
     .catch(err => console.error('❌ Erreur de synchronisation:', err));
 
-import bodyParser from 'body-parser';
-import { verifySignature } from '@chargily/chargily-pay';
+const bodyParser = require('body-parser');
+const { verifySignature } = require('@chargily/chargily-pay');
+    
 
 app.use(
   bodyParser.json({
@@ -136,8 +146,17 @@ app.post('/webhook', (req, res) => {
 
 //webhook failure
 
+
+app.get('/info', (req, res) => {
+  res.json({ status: 'UP' });
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK' });
+});
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  client.start(); 
 });
 
 /*

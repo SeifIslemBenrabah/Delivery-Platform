@@ -7,10 +7,11 @@ const Paiement = sequelize.define('Paiement', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
+    autoIncrement:true
   },
   checkout_url: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     unique:true
   },
   prix_total: {
