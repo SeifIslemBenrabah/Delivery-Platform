@@ -2,3 +2,4 @@ backend/Ms-Optimization/venv/Lib/
 backend/Ms-CatalogueCommande/node_modules/
 backend/Ms-Payement/node_modules/
 backend/Ms-suivi/node_modules/
+backend/Ms-suivi/data/mongodb/

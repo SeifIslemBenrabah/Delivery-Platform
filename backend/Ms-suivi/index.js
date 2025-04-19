@@ -4,58 +4,28 @@ import { WebSocketServer } from "ws";
 import { parse } from "url";
 import dotenv from "dotenv";
 import axios from "axios";
-import { Commande, Livreur } from "./models/Livreur.js";
+import { Livreur } from "./models/Livreur.js";
+import { Commande } from "./models/Commande.js";
 import mongoose from "mongoose";
+import connectDB from "./config/db.js";
 
 dotenv.config();
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/suivi";
-
-// Connect to MongoDB
-async function connectDB() {
-    try {
-        await mongoose.connect(MONGO_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
-        console.log(" Connected to MongoDB");
-    } catch (error) {
-        console.error(" MongoDB connection error:", error);
-        process.exit(1);
-    }
-}
-
-connectDB();
-
 const app = express();
 const PORT = process.env.PORT || 5010;
 app.use(express.json());
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
-const users = new Map();     
-const commandes = new Map(); 
+// Connect to MongoDB
+connectDB();
 
-async function loadCommandes() {
-    try {
-        const dbCommandes = await Commande.find({});
-        dbCommandes.forEach((cmd) => {
-            commandes.set(cmd._id.toString(), {
-                livreurId: cmd.idLivreur.toString(),
-                clientId: cmd.idClient.toString(),
-                status: cmd.status,
-            });
-        });
-        console.log(` Loaded ${dbCommandes.length} commandes into memory`);
-    } catch (error) {
-        console.error(" Error loading commandes from DB:", error);
-    }
-}
-
-// Load commandes when the server starts
-loadCommandes();
+const users = new Map();      // Stores all connected users (both clients and livreurs)
+const livreurs = new Map();   // Stores livreurs and their associated commandes
+const commandes = new Map();  // Stores all commandes in memory
+const clients = new Map();    // Stores clients and their associated commandes
 
 /**
- *  Handle incoming WebSocket messages
+ * Handle incoming WebSocket messages
  */
 async function handleMessage(ws, userId, role, message) {
     try {
@@ -64,7 +34,7 @@ async function handleMessage(ws, userId, role, message) {
         // Livreur sends location updates
         if (role === "livreur" && data.location) {
             users.get(userId).location = data.location;
-
+            
             // Update location in MongoDB
             await Livreur.findByIdAndUpdate(
                 userId,
@@ -74,9 +44,8 @@ async function handleMessage(ws, userId, role, message) {
                 },
                 { new: true }
             );
-
             console.log(`Livreur ${userId} location updated`);
-
+            
             // Notify clients about their livreur's location
             for (const [cmdId, cmdData] of commandes) {
                 if (cmdData.livreurId === userId) {
@@ -120,7 +89,7 @@ async function handleMessage(ws, userId, role, message) {
             }
         }
     } catch (error) {
-        console.error(" Error handling message:", error);
+        console.error("Error handling message:", error);
         ws.send(
             JSON.stringify({
                 type: "error",
@@ -131,39 +100,7 @@ async function handleMessage(ws, userId, role, message) {
 }
 
 /**
- *  When a new livreur connects, fetch and store their commandes in memory
- */
-async function handleCommande(userId) {
-    try {
-        const livreurCommandes = await axios.get(`http://localhost:8000/route/${userId}`);
-        for (let com of livreurCommandes.data) {
-            const commandeData = await axios.get(`http://localhost:5000/commandes/${com.commandeId}`);
-
-            // Save to MongoDB
-            const savedCommande = await Commande.create({
-                idClient: new mongoose.Types.ObjectId(commandeData.data.idClient),
-                idLivreur: new mongoose.Types.ObjectId(userId),
-                dropLocation: { type: "Point", coordinates: commandeData.data.DropOffAddress },
-                pickupLocation: { type: "Point", coordinates: commandeData.data.PickUpAddress },
-                status: commandeData.data.statusCommande,
-            });
-
-            // Save to Map for fast access
-            commandes.set(savedCommande._id.toString(), {
-                livreurId: userId,
-                clientId: commandeData.data.idClient,
-                status: commandeData.data.statusCommande,
-            });
-
-            console.log("✅ Commande created & stored in memory:", savedCommande);
-        }
-    } catch (error) {
-        console.error(" Error handling commandes:", error);
-    }
-}
-
-/**
- *  Handle WebSocket Connections
+ * Handle WebSocket Connections
  */
 wss.on("connection", (ws, req) => {
     const { query } = parse(req.url, true);
@@ -177,37 +114,117 @@ wss.on("connection", (ws, req) => {
     }
 
     users.set(userId, { ws, role, location: null });
-
     console.log(`🔵 User ${userId} connected as ${role}. Current users:`, Array.from(users.keys()));
 
     // If a livreur connects, fetch their commandes
     if (role === "livreur") {
-        handleCommande(userId);
+        fetchLivreurCommandes(userId);
+    }
+    
+    // If a client connects, fetch their commandes
+    if (role === "client") {
+        fetchClientCommandes(userId);
     }
 
     ws.on("message", (message) => handleMessage(ws, userId, role, message));
     ws.on("close", () => {
         users.delete(userId);
-        console.log(` User ${userId} disconnected`);
+        console.log(`User ${userId} disconnected`);
     });
-    ws.on("error", (error) => console.error(` WebSocket error for user ${userId}:`, error));
+    ws.on("error", (error) => console.error(`WebSocket error for user ${userId}:`, error));
 });
 
+async function fetchLivreurCommandes(userId) {
+    try {
+        const response = await axios.get(`http://localhost:8000/route/${userId}`);
+        const livreurCommandes = response.data.commandes; // Fixed: access data property of response
+        
+        for (let com of livreurCommandes) {
+            const commandeResponse = await axios.get(`http://localhost:5000/commandes/${com}`);
+            const commandeData = commandeResponse.data; // Fixed: access data property of response
+            
+            const savedCommande = await Commande.create({
+                idClient: new mongoose.Types.ObjectId(commandeData.idClient),
+                idLivreur: new mongoose.Types.ObjectId(userId),
+                dropLocation: { 
+                    type: "Point", 
+                    coordinates: [
+                        commandeData.DropOffAddress.longitude, 
+                        commandeData.DropOffAddress.latitude
+                    ] 
+                },
+                pickupLocation: { 
+                    type: "Point", 
+                    coordinates: [
+                        commandeData.PickUpAddress.longitude, 
+                        commandeData.PickUpAddress.latitude
+                    ] 
+                },
+                status: commandeData.statusCommande,
+            });
+
+            // Save to Map for fast access
+            commandes.set(savedCommande._id.toString(), {
+                livreurId: userId,
+                clientId: commandeData.idClient,
+                status: commandeData.statusCommande,
+            });
+            
+            // Update livreurs map
+            if (!livreurs.has(userId)) {
+                livreurs.set(userId, []);
+            }
+            livreurs.get(userId).push(savedCommande._id.toString());
+            
+            console.log("✅ Commande created & stored in memory:", savedCommande);
+        }
+    } catch (error) {
+        console.error("Error handling commandes:", error);
+    }
+}
+
+async function fetchClientCommandes(userId) {
+    try {
+        const response = await axios.get(`http://localhost:5000/commandes/client/${userId}`);
+        const clientCommandes = response.data.map(cmd => ({
+            id: cmd._id,
+            status: cmd.statusCommande,
+            date: cmd.date,
+            pickUpCoordinates: [cmd.PickUpAddress.longitude, cmd.PickUpAddress.latitude],
+            dropOffCoordinates: [cmd.DropOffAddress.longitude, cmd.DropOffAddress.latitude]
+        }));
+        
+        clients.set(userId, clientCommandes);
+        console.log(`Fetched ${clientCommandes.length} commandes for client ${userId}`);
+    } catch (error) {
+        console.error('Error fetching client commands:', error);
+        // If this is called from a WebSocket connection, we should send an error message
+        const user = users.get(userId);
+        if (user && user.ws.readyState === user.ws.OPEN) {
+            user.ws.send(JSON.stringify({
+                type: "error",
+                message: "Failed to fetch commandes",
+                error: error.message
+            }));
+        }
+    }
+}
+
 /**
- *  REST Endpoints
+ * REST Endpoints
  */
 // Get all livreurs' locations
 app.get("/livreursLocations", async (req, res) => {
     try {
-        const livreurs = [];
+        const livreursLocations = [];
         for (const [userId, user] of users.entries()) {
             if (user.role === "livreur" && user.location) {
-                livreurs.push({ livreurId: userId, location: user.location });
+                livreursLocations.push({ livreurId: userId, location: user.location });
             }
         }
-        res.json({ status: "success", data: livreurs });
+        res.json({ status: "success", data: livreursLocations });
     } catch (error) {
-        console.error(" Error fetching locations:", error);
+        console.error("Error fetching locations:", error);
         res.status(500).json({ status: "error", message: "Internal server error" });
     }
 });
@@ -216,13 +233,17 @@ app.get("/livreursLocations", async (req, res) => {
 app.get("/route", async (req, res) => {
     try {
         const { startLat, startLon, endLat, endLon } = req.query;
+        if (!startLat || !startLon || !endLat || !endLon) {
+            return res.status(400).json({ error: "Missing required parameters" });
+        }
+        
         const url = `https://graphhopper.com/api/1/route?point=${startLat},${startLon}&point=${endLat},${endLon}&vehicle=car&key=${process.env.GRAPH_HOPPER_API_KEY}`;
         const response = await axios.get(url);
         res.json(response.data);
     } catch (error) {
-        console.error(" Error fetching route:", error.message);
+        console.error("Error fetching route:", error.message);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
-server.listen(PORT, () => console.log(` Server running on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
