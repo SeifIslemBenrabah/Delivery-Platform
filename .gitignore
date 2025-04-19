@@ -1,9 +1,5 @@
-<<<<<<< HEAD
-**/.env
-**/node_modules/
-=======
 backend/Ms-Optimization/venv/Lib/
 backend/Ms-CatalogueCommande/node_modules/
 backend/Ms-Payement/node_modules/
 backend/Ms-suivi/node_modules/
->>>>>>> b3a9a5d9d997470a68dc1b7a68298f69d33aadbc
+**/node_modules/
