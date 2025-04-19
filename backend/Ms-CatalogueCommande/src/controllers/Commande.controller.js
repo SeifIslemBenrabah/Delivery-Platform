@@ -62,7 +62,29 @@ const getCommandeById = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
+const getCommandeByClientId = async (req,res)=>{
+  const { clientId } = req.params;
+  try{
+    if (!clientId) {
+      return res.status(400).json({
+          success: false,
+          message: "Client ID is required"
+      });
+  }
+  const commandes = await Commande.find({ idClient: clientId }).sort({ date: -1 });
+  res.status(200).json({
+    success: true,
+    data: commandes
+});
+  }catch(error){
+    console.error('Error fetching client commands:', error);
+    res.status(500).json({
+        success: false,
+        message: "Server error while fetching commands",
+        error: error.message
+    });
+  }
+}
 const updateCommandeStatus = async (req, res) => {
   try {
     const { commandeId } = req.params;
@@ -109,4 +131,5 @@ module.exports = {
   getCommandeById,
   updateCommandeStatus,
   deleteCommande,
+  getCommandeByClientId
 };
