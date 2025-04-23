@@ -11,6 +11,27 @@ const { Eureka } = require('eureka-js-client');
 const app = express();
 const PORT = process.env.PORT || 5050;
 
+const client = new Eureka({
+  instance: {
+    app: 'CommandeService',  
+    hostName: 'localhost',
+    ipAddr: '127.0.0.1',
+    port: {
+      '$': PORT,
+      '@enabled': true
+    },
+    vipAddress: 'CommandeService',
+    dataCenterInfo: {
+      '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
+      name: 'MyOwn',
+    },
+  },
+  eureka: {
+    host: 'localhost',  
+    port: 8888,             
+    servicePath: '/eureka/apps/'
+  },
+});
 app.use(express.json());
 app.use("/boutiques", boutiqueRoutes);
 app.use("/products", productRoutes);
@@ -32,27 +53,7 @@ connectDB().then(() => {
   });
 
   // Eureka Registration
-  const client = new Eureka({
-    instance: {
-      app: 'CommandeService',  
-      hostName: 'localhost',
-      ipAddr: '127.0.0.1',
-      port: {
-        '$': PORT,
-        '@enabled': true
-      },
-      vipAddress: 'CommandeService',
-      dataCenterInfo: {
-        '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
-        name: 'MyOwn',
-      },
-    },
-    eureka: {
-      host: 'localhost',  
-      port: 8888,             
-      servicePath: '/eureka/apps/'
-    },
-  });
+
 
 
   // Graceful shutdown
