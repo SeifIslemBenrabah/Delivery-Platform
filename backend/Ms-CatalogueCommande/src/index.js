@@ -34,14 +34,14 @@ connectDB().then(() => {
   // Eureka Registration
   const client = new Eureka({
     instance: {
-      app: 'CommandeService',  
+      app: 'ms-commande',  
       hostName: 'localhost',
       ipAddr: '127.0.0.1',
       port: {
         '$': PORT,
         '@enabled': true
       },
-      vipAddress: 'CommandeService',
+      vipAddress: 'ms-commande',
       dataCenterInfo: {
         '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
         name: 'MyOwn',
