@@ -10,7 +10,7 @@ const client = new Eureka({
       '$': process.env.PORT, // Port de votre serveur Express
       '@enabled': true,
     },
-    vipAddress: 'express-service', // Nom du service (peut être identique à `app`)
+    vipAddress: 'ms-payement', // Nom du service (peut être identique à `app`)
     dataCenterInfo: {
       '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
       name: 'MyOwn', // Doit être "MyOwn" pour un déploiement hors AWS
@@ -24,5 +24,13 @@ const client = new Eureka({
     servicePath: '/eureka/apps/',
   },
 });
+function getServiceUrl(serviceName) {
+  const instances = client.getInstancesByAppId(serviceName);
+  if (instances && instances.length > 0) {
+    const instance = instances[0];
+    return `http://${instance.hostName}:${instance.port.$}`;
+  }
+  throw new Error(`Service ${serviceName} non trouvé`);
+}
 
-module.exports = client;
+module.exports = {client,getServiceUrl};

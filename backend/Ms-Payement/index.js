@@ -1,5 +1,6 @@
 const express = require("express");
 require("dotenv").config();
+const axios = require('axios');
 const connectDB = require("./config/db"); 
 const app = express();
 const PORT = process.env.PORT || 5010;
@@ -9,7 +10,7 @@ const Paiment=require('./models/paiement')
 const ProduitPaiment=require('./models/produitpaiement')
 const getCommandeProducts=require("./services/ms_commandes.service");
 const { calculateCommercentPrice, calculateLivraisonPrice } = require("./utils/calculate");
-const client = require('./config/eureka-client');
+const {client,getServiceUrl} = require('./config/eureka-client');
 
 app.use(express.json());
 
@@ -78,8 +79,9 @@ await ProduitPaiment.bulkCreate(produitPaiement)
   paiement.prix_commercent=commercent_price
   paiement.prix_total=livraison_price+commercent_price
   
-  const checkout_url=await createCheckout([...items,{price:livraison_price_id,quantity:1}],payment_method)
+  const {checkout_url,id}=await createCheckout([...items,{price:livraison_price_id,quantity:1}],payment_method)
   paiement.checkout_url=checkout_url
+  paiement.checkout_id=id
   await paiement.save()
   res.status(200).json({livraison_price,total:livraison_price+commercent_price})
   // return total price
@@ -90,6 +92,17 @@ app.post("/checkout/:id",async(req,res)=>{
   const id = req.params.id;
   const paiement=await Paiment.findByPk(id)
   res.redirect(paiement.checkout_url)
+})
+app.get("/failure",async(req,res)=>{
+  console.log(req.query.checkout_id)
+  
+  Paiment.update({status:"failed"},{where:{checkout_id:req.query.checkout_id}})
+  res.send("failure "+req.query.checkout_id)
+})
+app.get("/success",async(req,res)=>{
+  console.log(req.query.checkout_id)
+  Paiment.update({status:"success"},{where:{checkout_id:req.query.checkout_id}})
+  res.send("success "+req.query.checkout_id)
 })
 
 const sequelize = require('./config/db');
@@ -153,6 +166,10 @@ app.get('/info', (req, res) => {
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK' });
+});
+
+app.get('/get', (req, res) => {
+  console.log(getServiceUrl("ms-gateway"))
 });
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

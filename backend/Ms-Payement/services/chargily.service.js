@@ -27,12 +27,12 @@ const createCheckout = async(items,payment_method)=>{
    console.log(items)
     const checkout = await client.createCheckout({
         items,
-        success_url: 'http://localhost:5010/success',
-        failure_url: 'http://localhost:5010/failure',
+        success_url: `http://localhost:${process.env.PORT}/success`,
+        failure_url:`http://localhost:${process.env.PORT}/failure`,
         
         collect_shipping_address: true,
       });
-      return checkout.checkout_url
+      return {checkout_url:checkout.checkout_url,id:checkout.id}
 }
 
 module.exports={createProduct,createCheckout,createPrice}
