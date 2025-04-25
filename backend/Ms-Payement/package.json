@@ -12,6 +12,7 @@
   "description": "",
   "dependencies": {
     "@chargily/chargily-pay": "^2.1.0",
+    "axios": "^1.8.4",
     "body-parser": "^1.20.3",
     "dotenv": "^16.4.7",
     "eureka-js-client": "^4.5.0",

@@ -14,6 +14,11 @@ const Paiement = sequelize.define('Paiement', {
     allowNull: true,
     unique:true
   },
+  checkout_id: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique:true
+  },
   prix_total: {
     type: DataTypes.INTEGER,
     defaultValue:0
@@ -43,6 +48,10 @@ const Paiement = sequelize.define('Paiement', {
         model: Commercent,
         key: 'id'
     },
+  },
+  status: {
+    type: DataTypes.STRING,
+    defaultValue:"pending"
   },
 }, {
   timestamps: true, // Ajoute createdAt et updatedAt automatiquement

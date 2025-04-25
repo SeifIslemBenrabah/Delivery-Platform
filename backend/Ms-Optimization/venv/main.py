@@ -1,7 +1,7 @@
-from http.client import HTTPException
-from fastapi import FastAPI,Request # type: ignore
+from fastapi import FastAPI,Request,HTTPException # type: ignore
 import random
 import sys
+from fastapi.responses import JSONResponse
 import requests # type: ignore
 import networkx as nx # type: ignore
 import py_eureka_client.eureka_client as eureka_client
@@ -21,6 +21,12 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import asyncio
 import socket
 from contextlib import asynccontextmanager
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 # 📌 Fonction de rappel en cas d'erreur
 def on_err(err_type: str, err: Exception):
@@ -375,16 +381,52 @@ async def update_liv(livreur):
 
     await collection.update_one(query_filter, update_operation)
 
+async def add_commande_liv(livreur,commande):
+    query_filter = {"id": livreur}
+
+    # 🔹 Extraire seulement les ID des commandes
+
+    update_operation = {
+        "$push": {
+            "commandes": commande  # ✅ Ajouter un ID à la liste
+        }
+    }
+
+    await collection.update_one(query_filter, update_operation)
+
+async def delete_commande_liv(livreur,commande):
+    query_filter = {"id": livreur}
+
+    # 🔹 Extraire seulement les ID des commandes
+
+    update_operation = {
+        "$pull": {
+            "commandes": commande  # ✅ Ajouter un ID à la liste
+        }
+    }
+
+    await collection.update_one(query_filter, update_operation)
 
 
 @app.post("/new_order")
 async def add_order(request:Request):
-    url_cmd="http://localhost:5000/commandes"
+    instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
+    if not instances:
+            return JSONResponse(
+                status_code=503,
+                content={"message": "MS-GATEWAY service unavailable"}
+            )
+        
+    instance = instances[0]
+    print(1)
+    url_cmd=f"http://{instance.hostName}:{instance.port.port}/service-commande/commandes"
     url_livreur="http://localhost:5010/livreursLocations"
     response = requests.get(url_cmd)
-
+    print(url_cmd)
+    print(response)
     if response.status_code == 200:
       all_commandes = response.json()
+      print(all_commandes)
       r=requests.get(url_livreur)
       print(r)
       
@@ -404,20 +446,72 @@ async def add_order(request:Request):
       
       clusters[i]["Commandes"].append(order)
      # generate_map(clusters)
-      best_route(clusters[i])
+      trajet=best_route(clusters[i])
       await update_liv(clusters[i])
+      print(trajet)
+      return {"trajet": trajet, "livreur": clusters[i]["idlivreur"]}
       
+@app.post("/accept")
+async def accept(request:Request):
+     # generate_map(clusters)
+     instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
+     if not instances:
+            return JSONResponse(
+                status_code=503,
+                content={"message": "MS-GATEWAY service unavailable"}
+            )
+        
+     instance = instances[0]
+     livreur=request.get('livreur')
+     commande=request.get('commande')
+     await add_commande_liv(livreur["idLivreur"],commande)
+     url_cmd=f"http://{instance.hostName}:{instance.port.port}/service-commande/commandes"
+     response = requests.get(url_cmd)
+     print(url_cmd)
+     print(response)
+     if response.status_code == 200:
+       all_commandes = response.json()
+       print(all_commandes)
+       clusters=generate_data(commandes=all_commandes["commandes"],livreurs=[livreur])
+       trajet=best_route(clusters[0])
+       await update_liv(clusters[0])   
+       return {"trajet": trajet, "livreur": livreur["idLivreur"]}
       
-      
+@app.post("/finish")
+async def finish(request:Request):
+     # generate_map(clusters)
+     instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
+     if not instances:
+            return JSONResponse(
+                status_code=503,
+                content={"message": "MS-GATEWAY service unavailable"}
+            )
+        
+     instance = instances[0]
+     livreur=request.get('livreur')
+     commande=request.get('commande')
+     await delete_commande_liv(livreur['idLivreur'],commande)
+     url_cmd=f"http://{instance.hostName}:{instance.port.port}/service-commande/commandes"
+     response = requests.get(url_cmd)
+     print(url_cmd)
+     print(response)
+     if response.status_code == 200:
+       all_commandes = response.json()
+       print(all_commandes)
+       clusters=generate_data(commandes=all_commandes["commandes"],livreurs=[livreur])
+       trajet=best_route(clusters[0])
+       print("hi") 
+       await update_liv(clusters[0])        
+       print(trajet) 
+       return {"trajet": trajet, "livreur": livreur['idLivreur']}
       
 
 @app.get("/route/{id}")
-async def get_route(id: int):
-    await getliv(99)
+async def get_route(id):
     livreur = await collection.find_one({"id": id})
     print(livreur)
     if livreur is None:
-        raise HTTPException(status_code=404, detail="Livreur non trouvé")
+        return {"trajet": [],"commandes":[]}
     return {"trajet": livreur["trajet"],"commandes":livreur["commandes"]}
     
 
@@ -533,7 +627,7 @@ async def generate_data(commandes, livreurs):
 
 
         temp = {
-            "idlivreur": int(liv["livreurId"]),
+            "idlivreur": liv["livreurId"],
             "position": liv["location"],
             "Commandes": [],
             "trajet": livdb["trajet"] if "trajet" in livdb else []
@@ -561,4 +655,33 @@ def generate_table(commandes):
     return [cmd.idCommande for cmd in commandes]
     
 
-       
+
+
+    
+
+
+@app.get("/call-user-service")
+async def call_user_service():
+    try:
+        # Get all registered apps for debugging
+        apps = eureka_client.get_client().applications.applications
+        print("Available services:", [app.name for app in apps])
+        
+        instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
+        if not instances:
+            return JSONResponse(
+                status_code=503,
+                content={"message": "MS-GATEWAY service unavailable"}
+            )
+        
+        instance = instances[0]
+        url = f"http://{instance.hostName}:{instance.port.port}/service-payement/info"
+        
+        response = requests.get(url, timeout=5)
+        return response.json()
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"message": str(e)}
+        )

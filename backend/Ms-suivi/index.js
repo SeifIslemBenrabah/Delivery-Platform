@@ -8,35 +8,12 @@ import { Livreur } from "./models/Livreur.js";
 import { Commande } from "./models/Commande.js";
 import mongoose from "mongoose";
 import connectDB from "./config/db.js";
-import {Eureka} from 'eureka-js-client';
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5010;
 app.use(express.json());
 const server = createServer(app);
-const eurekaClient = new Eureka({
-    instance: {
-        app: 'Suivi', 
-        hostName: 'localhost',           
-        ipAddr: '127.0.0.1',
-        port: {
-            '$': PORT,
-            '@enabled': true
-        },
-        vipAddress: 'Suivi',
-        dataCenterInfo: {
-            '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
-            name: 'MyOwn'
-        }
-    },
-    eureka: {
-        host: 'localhost',  
-        port: 8888,        
-        servicePath: '/eureka/apps/'
-    }
-});
-
 const wss = new WebSocketServer({ server });
 
 // Connect to MongoDB
@@ -159,25 +136,12 @@ wss.on("connection", (ws, req) => {
 
 async function fetchLivreurCommandes(userId) {
     try {
-        // const optimizationInstances = client.getInstancesByAppId('MS-OPTIMIZATION');
-        // if (!optimizationInstances || optimizationInstances.length === 0) {
-        //     throw new Error('No MS-OPTIMIZATION instance found in Eureka');
-        // }
-        // const optimizationHost = optimizationInstances[0].homePageUrl;
-
-        // const response = await axios.get(`${optimizationHost}route/${userId}`);
         const response = await axios.get(`http://localhost:8000/route/${userId}`);
-        // const livreurCommandes = response.data.commandes; 
-        // const commandeInstances = client.getInstancesByAppId('CommandeService');
-        // if (!commandeInstances || commandeInstances.length === 0) {
-        //     throw new Error('No COMMANDESERVICE instance found in Eureka');
-        // }
-        // const commandeHost = commandeInstances[0].homePageUrl;
-
+        const livreurCommandes = response.data.commandes; // Fixed: access data property of response
+        
         for (let com of livreurCommandes) {
-            // const commandeResponse = await axios.get(`${commandeHost}commandes/${com}`);
             const commandeResponse = await axios.get(`http://localhost:5000/commandes/${com}`);
-            const commandeData = commandeResponse.data; 
+            const commandeData = commandeResponse.data; // Fixed: access data property of response
             
             const savedCommande = await Commande.create({
                 idClient: new mongoose.Types.ObjectId(commandeData.idClient),
@@ -246,7 +210,6 @@ async function fetchClientCommandes(userId) {
     }
 }
 
-
 /**
  * REST Endpoints
  */
@@ -283,19 +246,4 @@ app.get("/route", async (req, res) => {
     }
 });
 
-server.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`)
-    eurekaClient.start((error) => {
-        if (error) {
-            console.error('Eureka registration failed:', error);
-        } else {
-            console.log('Eureka client registered successfully!');
-        }
-    });
-});
-process.on('SIGINT', () => {
-    eurekaClient.stop(() => {
-        console.log('Eureka client stopped.');
-        process.exit();
-    });
-});
+server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
