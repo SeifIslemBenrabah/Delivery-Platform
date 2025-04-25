@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #19BF5F;
+  --color-backgroundGray: #F3F3F3;
+  --color-light: #FBFBFB;
+  --font-nunito: "Nunito Sans", sans-serif;
+  --text-normal: 13px;
+}
+/* index.css or App.css */
+html, body {
+    height: 100%;
+  }
+  

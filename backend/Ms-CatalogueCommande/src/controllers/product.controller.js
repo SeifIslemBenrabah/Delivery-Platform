@@ -1,5 +1,7 @@
 const cloudinary = require("../config/cloudinary");
 const Produit = require("../models/Produit");
+const {Boutique} = require("../models/Boutique");
+const mongoose = require("mongoose");
 
 const addProduit = async (req, res) => {
   try {
@@ -49,6 +51,26 @@ const getAllProduits = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+const getProduitBySearch = async (req, res) => {
+  try {
+    const searchTerm = req.query.search?.trim();
+
+    if (!searchTerm) {
+      return res.status(400).json({ msg: "What are you searching for?" });
+    }
+
+    const produits = await Produit.find({
+      nomProduit: { $regex: new RegExp(searchTerm, "i") } 
+    });
+    if (produits.length === 0) {
+      return res.status(404).json({ msg: "There is no product with this name." });
+    }
+    return res.status(200).json(produits);
+  } catch (err) {
+    console.error("Error fetching products:", err);
+    res.status(500).json({ message: "Server error", error: err });
+  }
+};
 
 const getProduitById = async (req, res) => {
   try {
@@ -64,17 +86,34 @@ const getProduitById = async (req, res) => {
 };
 const getProduitByIdCatalogue = async (req, res) => {
   try {
-    const produits = await Produit.find({Catalogueid:req.params.id});
-    if (!produits) {
-      return res.status(404).json({ message: "Products not found!" });
+    const { boutiqueId, catalogueId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(boutiqueId)) {
+      return res.status(400).json({ msg: "Invalid boutique ID format." });
     }
-    if( produits.length === 0){
+    if (!mongoose.Types.ObjectId.isValid(catalogueId)) {
+      return res.status(400).json({ msg: "Invalid catalogue ID format." });
+    }
+    const boutique = await Boutique.findById(new mongoose.Types.ObjectId(boutiqueId));
+
+    if (!boutique) {
+      return res.status(404).json({ msg: "Boutique not found." });
+    }
+    const catalogue = boutique.catalogues.find(cat => cat._id.toString() === catalogueId);
+
+    if (!catalogue) {
+      return res.status(404).json({ msg: "Catalogue not found." });
+    }
+    const produits = await Produit.find({ catalogueId });
+
+    if (produits.length === 0) {
       return res.status(200).json({ message: "No products found in this catalog." });
-   }
-    res.status(200).json(produit);
+    }
+
+    return res.status(200).json(produits);
   } catch (error) {
-    console.error("Error fetching product:", error);
-    res.status(500).json({ message: "Server error", error });
+    console.error("Error fetching products:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 const updateProduit = async (req, res) => {
@@ -146,4 +185,6 @@ module.exports = {
   getProduitById,
   updateProduit,
   deleteProduit,
+  getProduitBySearch,
+  getProduitByIdCatalogue
 };

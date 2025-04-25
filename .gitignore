@@ -2,4 +2,8 @@ backend/Ms-Optimization/venv/Lib/
 backend/Ms-CatalogueCommande/node_modules/
 backend/Ms-Payement/node_modules/
 backend/Ms-suivi/node_modules/
+<<<<<<< HEAD
 backend/Ms-suivi/data/mongodb/
+=======
+**/node_modules/
+>>>>>>> 12ce44fa10ce7fe57f089736a63dcc8aeaa571f5
