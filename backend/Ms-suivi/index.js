@@ -8,7 +8,7 @@ import { Livreur } from "./models/Livreur.js";
 import { Commande } from "./models/Commande.js";
 import mongoose from "mongoose";
 import connectDB from "./config/db.js";
-
+import { Eureka } from 'eureka-js-client';
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5010;
@@ -137,11 +137,11 @@ wss.on("connection", (ws, req) => {
 async function fetchLivreurCommandes(userId) {
     try {
         const response = await axios.get(`http://localhost:8000/route/${userId}`);
-        const livreurCommandes = response.data.commandes; // Fixed: access data property of response
+        const livreurCommandes = response.data.commandes; 
         
         for (let com of livreurCommandes) {
             const commandeResponse = await axios.get(`http://localhost:5000/commandes/${com}`);
-            const commandeData = commandeResponse.data; // Fixed: access data property of response
+            const commandeData = commandeResponse.data;
             
             const savedCommande = await Commande.create({
                 idClient: new mongoose.Types.ObjectId(commandeData.idClient),
@@ -182,6 +182,36 @@ async function fetchLivreurCommandes(userId) {
         console.error("Error handling commandes:", error);
     }
 }
+app.post("/notify-livreur", async (req, res) => {
+    try {
+        const { idLivreur, idCommande, message } = req.body;
+
+        if (!idLivreur || !idCommande) {
+            return res.status(400).json({ error: "idLivreur and idCommande are required" });
+        }
+
+        const user = users.get(idLivreur);
+
+        if (!user || user.role !== "livreur") {
+            return res.status(404).json({ error: "Livreur not connected" });
+        }
+
+        if (user.ws.readyState === user.ws.OPEN) {
+            user.ws.send(JSON.stringify({
+                type: "new_commande",
+                commandeId: idCommande,
+                message: message || `Nouvelle commande ${idCommande}` ,
+                timestamp: new Date().toISOString(),
+            }));
+            return res.status(200).json({ success: true, message: "Notification sent to livreur" });
+        } else {
+            return res.status(500).json({ error: "Livreur WebSocket not open" });
+        }
+    } catch (error) {
+        console.error("Error notifying livreur:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
 
 async function fetchClientCommandes(userId) {
     try {
@@ -230,20 +260,79 @@ app.get("/livreursLocations", async (req, res) => {
 });
 
 // Get optimized route using GraphHopper
+// app.get("/route", async (req, res) => {
+//     try {
+//         const { startLat, startLon, endLat, endLon } = req.query;
+//         if (!startLat || !startLon || !endLat || !endLon) {
+//             return res.status(400).json({ error: "Missing required parameters" });
+//         }
+        
+//         const url = `https://graphhopper.com/api/1/route?point=${startLat},${startLon}&point=${endLat},${endLon}&vehicle=car&key=${process.env.GRAPH_HOPPER_API_KEY}`;
+//         const response = await axios.get(url);
+//         res.json(response.data);
+//     } catch (error) {
+//         console.error("Error fetching route:", error.message);
+//         res.status(500).json({ error: "Internal Server Error" });
+//     }
+// });
+
 app.get("/route", async (req, res) => {
     try {
         const { startLat, startLon, endLat, endLon } = req.query;
         if (!startLat || !startLon || !endLat || !endLon) {
             return res.status(400).json({ error: "Missing required parameters" });
         }
-        
+
         const url = `https://graphhopper.com/api/1/route?point=${startLat},${startLon}&point=${endLat},${endLon}&vehicle=car&key=${process.env.GRAPH_HOPPER_API_KEY}`;
         const response = await axios.get(url);
-        res.json(response.data);
+        
+        const distance = response.data.paths?.[0]?.distance;
+        if (distance === undefined) {
+            return res.status(500).json({ error: "Could not extract distance from response" });
+        }
+
+        res.json({ distance });
     } catch (error) {
         console.error("Error fetching route:", error.message);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
-server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
+
+
+
+
+
+const client = new Eureka({
+    instance: {
+      app: 'ms-suivi',
+      hostName: 'localhost',
+      ipAddr: '127.0.0.1',
+      port: {
+        '$': PORT,
+        '@enabled': true,
+      },
+      vipAddress: 'ms-suivi',
+      dataCenterInfo: {
+        '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
+        name: 'MyOwn',
+      },
+    },
+    eureka: {
+      host: 'localhost',   
+      port: 8888,          
+      servicePath: '/eureka/apps/',
+    },
+  });
+  
+  server.listen(PORT, () => {
+    console.log(`ms-suivi running at http://localhost:${PORT}`);
+    client.start((err) => {
+      if (err) {
+        console.error('ms-suivi failed to register with Eureka:', err);
+      } else {
+        console.log('ms-suivi registered with Eureka');
+      }
+    });
+  });

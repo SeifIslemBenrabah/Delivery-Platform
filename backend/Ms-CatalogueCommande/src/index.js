@@ -17,53 +17,55 @@ app.use("/products", productRoutes);
 app.use("/boutiques", catalogueRoutes);
 app.use("/commandes", commandeRoutes);
 
+// ✅ DECLARE THE CLIENT GLOBALLY
+const client = new Eureka({
+  instance: {
+    app: 'ms-commande',
+    hostName: 'localhost',
+    ipAddr: '127.0.0.1',
+    port: {
+      '$': PORT,
+      '@enabled': true
+    },
+    vipAddress: 'ms-commande',
+    dataCenterInfo: {
+      '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
+      name: 'MyOwn',
+    },
+  },
+  eureka: {
+    host: 'localhost',
+    port: 8888,
+    servicePath: '/eureka/apps/',
+  },
+});
+
 connectDB().then(() => {
   console.log("✅ Connected to MongoDB!");
 
   app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
+
     client.start((error) => {
       if (error) {
         console.error('Eureka registration failed:', error);
       } else {
-        console.log('Registered with Eureka!');
+        console.log('✅ Registered with Eureka!');
       }
     });
   });
 
-  // Eureka Registration
-  const client = new Eureka({
-    instance: {
-      app: 'ms-commande',  
-      hostName: 'localhost',
-      ipAddr: '127.0.0.1',
-      port: {
-        '$': PORT,
-        '@enabled': true
-      },
-      vipAddress: 'ms-commande',
-      dataCenterInfo: {
-        '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
-        name: 'MyOwn',
-      },
-    },
-    eureka: {
-      host: 'localhost',  
-      port: 8888,             
-      servicePath: '/eureka/apps/'
-    },
-  });
-
-
   // Graceful shutdown
   process.on('SIGINT', () => {
     client.stop(() => {
-      console.log('Eureka client stopped.');
+      console.log('🛑 Eureka client stopped.');
       process.exit();
     });
   });
-
 }).catch((err) => {
   console.error("MongoDB Connection Failed:", err);
   process.exit(1);
 });
+
+// ✅ NOW client is accessible here:
+module.exports = client;

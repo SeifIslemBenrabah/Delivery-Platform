@@ -1,6 +1,8 @@
 const Commande = require("../models/Commande");
 const mongoose = require("mongoose");
 const axios = require('axios');
+const { Eureka } = require('eureka-js-client');
+const client = require('../index')
 async function getUserDetails(userId) {
   try {
       const response = await axios.get(`http://localhost:5001/users/${userId}`);
@@ -17,7 +19,6 @@ const createCommande = async (req, res) => {
     if (!DropOffAddress || !Livraisontype || !idClient || !produits) {
       return res.status(400).json({ message: "Missing required fields!" });
     }
-
     // Fetch user details if PickUpAddress is not provided
     if (!PickUpAddress) {
       const userDetails = await getUserDetails(idClient);
@@ -47,7 +48,27 @@ const createCommande = async (req, res) => {
     });
 
     await newCommande.save();
+    // console.log(client);
+    // const instances = client.getInstancesByAppId('CART-API'); 
+    // if (!instances || instances.length === 0) {
+    //   return res.status(503).json({ message: "cart-api not available" });
+    // }
 
+    // const { hostName, port } = instances[0]; 
+    // const cartApiUrl = `http://${hostName}:${port}/new_order`;
+
+    // const neworder = await axios.post(cartApiUrl, {
+    //   idCommande: newCommande.id,
+    //   depart: [PickUpAddress.latitude, PickUpAddress.longitude],
+    //   arrivee: [DropOffAddress.latitude, DropOffAddress.longitude]
+    // });
+    // const neworder = await axios.post(`http://localhost:8000/new_order`,
+    //   {
+    //     idCommande:newCommande.id,
+    //     depart:[PickUpAddress.latitude, PickUpAddress.longitude],
+    //     arrivee:[DropOffAddress.latitude, DropOffAddress.longitude]
+    //   }
+    // );
     res.status(201).json({ message: "Commande created successfully!", commande: newCommande });
   } catch (error) {
     console.error("Error creating Commande:", error);
