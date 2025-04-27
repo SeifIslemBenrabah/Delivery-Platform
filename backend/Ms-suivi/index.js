@@ -134,11 +134,11 @@ wss.on("connection", (ws, req) => {
     ws.on("error", (error) => console.error(`WebSocket error for user ${userId}:`, error));
 });
 
+
 async function fetchLivreurCommandes(userId) {
     try {
         const response = await axios.get(`http://localhost:8000/route/${userId}`);
         const livreurCommandes = response.data.commandes; 
-        
         for (let com of livreurCommandes) {
             const commandeResponse = await axios.get(`http://localhost:5000/commandes/${com}`);
             const commandeData = commandeResponse.data;
@@ -299,11 +299,50 @@ app.get("/route", async (req, res) => {
 });
 
 
+app.post("/livreur/route", async (req, res) => {
+    try {
+        const body = req.body;
+        const { livreurId, trajet, command } = body;
 
+        if (!livreurId || !trajet || !command) {
+            return res.status(400).json({ message: "livreurId, trajet and command are required" });
+        }
 
+        const points = trajet.map(coord => `point=${coord[1]},${coord[0]}`).join('&');
 
+        const url = `https://graphhopper.com/api/1/route?${points}&vehicle=car&locale=en&key=${process.env.GRAPH_HOPPER_API_KEY}&instructions=true`;
 
+        const response = await axios.get(url);
+        const routeData = response.data;
 
+        // Check if the livreur is connected
+        const user = users.get(livreurId);
+        if (!user || user.role !== "livreur") {
+            return res.status(404).json({ error: `Livreur not connected ${livreurId}` });
+        }
+
+        if (user.ws.readyState === user.ws.OPEN) {
+            user.ws.send(JSON.stringify({
+                type: "new_route",
+                route: routeData,
+                command: command
+            }));
+            console.log(`Route sent to livreur ${livreurId}`);
+        } else {
+            console.log(`Livreur ${livreurId} WebSocket is not open. Current state: ${user.ws.readyState}`);
+            return res.status(500).json({ error: "Livreur WebSocket not open" });
+        }
+
+        res.status(200).json({ message: "Route is being sent via WebSocket" });
+
+    } catch (error) {
+        console.error(error.response?.data || error.message);
+        res.status(500).json({ message: "An error occurred while generating route" });
+    }
+});
+
+  
+  
 const client = new Eureka({
     instance: {
       app: 'ms-suivi',

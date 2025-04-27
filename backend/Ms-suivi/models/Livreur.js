@@ -2,6 +2,10 @@ import mongoose from "mongoose";
 const { Schema } = mongoose;
 
 const LivreurSchema = new Schema({
+    _id: {
+        type: Number,  
+        required: true
+      },
     location: {
         type: {
             type: String,

@@ -6,7 +6,6 @@ import LandingPage from "./pages/LandingPage";
 import AdminHome from "./pages/AdminHome";
 import AdminDashboard from "./pages/AdminDashboard";
 import Clients from "./pages/Clients";
-import Money from "./pages/Money";
 import Deliveries from "./pages/Deliveries";
 import Merchant from "./pages/Merchant";
 import Shops from "./pages/Shops";
@@ -21,7 +20,6 @@ function App() {
         <Route path="admin" element={<AdminHome />}>
         <Route index element={<AdminDashboard />} />
         <Route path="clients" element={<Clients />} />
-        <Route path="money" element={<Money />} />
         <Route path="deliveries" element={<Deliveries />} />
         <Route path="merchant" element={<Merchant />} />
         <Route path="shops" element={<Shops />} />
