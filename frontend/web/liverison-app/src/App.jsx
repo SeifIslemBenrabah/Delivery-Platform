@@ -10,6 +10,12 @@ import Deliveries from "./pages/Deliveries";
 import Merchant from "./pages/Merchant";
 import Shops from "./pages/Shops";
 import Products from "./pages/Products";
+import ClientDetails from "./pages/ClientDetails"
+import DeliveriesDetails from "./pages/MerchantDetails";
+import  DeliveryRequests from './pages/DeliveryRequests'
+import MerchantDetails from './pages/MerchantDetails'
+import ShopDetails from "./pages/ShopDetails";
+import ShopRequests from './pages/ShopRequests'
 function App() {
   return (
     <>
@@ -20,9 +26,15 @@ function App() {
         <Route path="admin" element={<AdminHome />}>
         <Route index element={<AdminDashboard />} />
         <Route path="clients" element={<Clients />} />
+        <Route path="client/:id" element={<ClientDetails />} />
         <Route path="deliveries" element={<Deliveries />} />
+        <Route path="DeliveryRequests" element={< DeliveryRequests />} />
+        <Route path="deliverie/:id" element={<DeliveriesDetails />} />
         <Route path="merchant" element={<Merchant />} />
+        <Route path="Merchant/:id" element={<MerchantDetails />} />
         <Route path="shops" element={<Shops />} />
+        <Route path="ShopRequests" element={< ShopRequests />} />
+        <Route path="shop/:id" element={<ShopDetails/>} />
         <Route path="products" element={<Products />} />
           </Route>
       </Routes>
