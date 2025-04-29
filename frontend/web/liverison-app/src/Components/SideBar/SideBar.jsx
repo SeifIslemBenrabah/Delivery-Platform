@@ -54,7 +54,7 @@ const SideBar = () => {
                 key={i}
                 to={e.path}
                 className={({ isActive }) =>
-                  `flex items-center justify-center p-3 pt-2 pb-2  gap-3 rounded transition-colors ${
+                  `flex items-center justify-center  pl-2.5 w-[180px] pt-2 pb-2   gap-5 rounded transition-colors ${
                     isActive
                       ? "bg-green-500 text-white font-bold hover:bg-green-300"
                       : "text-gray-900 hover:bg-gray-400"
@@ -67,12 +67,12 @@ const SideBar = () => {
           })}
         </div>
       </div>
-      <div className="flex flex-col items-center gap-4 justify-center ">
-        <button className="text-gray-900 justify-center   flex items-center gap-2.5 hover:text-green-500 cursor-pointer">
+      <div className="flex flex-col items-start gap-4  w-full ">
+        <button className="text-gray-900 justify-center   flex items-center gap-5 pl-2.5 hover:text-green-500 cursor-pointer">
           <IoSettingsOutline className="text-[20px]" />
           Settings
         </button>
-        <button className="bg-white border border-red-500 text-red-500 text-[16px] font-semibold p-3 pt-1 pb-1 rounded  flex items-center gap-2.5 cursor-pointer hover:bg-red-500 hover:text-white">
+        <button className="bg-white border border-red-500 text-red-500 text-[16px] font-semibold p-3 pt-1 pb-1 rounded  flex items-center gap-5 cursor-pointer hover:bg-red-500 hover:text-white">
           <BiLogOut className="text-[20px]" />
           Log out
         </button>

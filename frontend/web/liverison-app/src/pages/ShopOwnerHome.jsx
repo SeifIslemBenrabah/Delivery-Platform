@@ -1,11 +1,15 @@
 import React from "react";
-import { Route, Routes } from "react-router";
+import { Outlet, Route, Routes } from "react-router";
 import SideBar from "../Components/SideBar/SideBar";
+import Products from "./ShopOwner-pages/Products";
 
 const ShopOwnerHome = () => {
   return (
     <div className="h-lvh">
-      <SideBar />
+      <SideBar className="fixed" />
+      <div className="flex-1 ml-[220px] flex flex-col h-full overflow-y-auto">
+        <Outlet />
+      </div>
     </div>
   );
 };
