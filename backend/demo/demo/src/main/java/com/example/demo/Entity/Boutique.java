@@ -30,5 +30,5 @@ public class Boutique {
     private List<HeuresTravail> heuresTravail;
     @ManyToOne
     @JoinColumn(name = "commercant_id")
-    private User commercant;
+    private Commercant commercant;
 }

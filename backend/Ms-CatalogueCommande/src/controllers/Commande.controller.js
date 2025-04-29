@@ -62,13 +62,13 @@ const createCommande = async (req, res) => {
     //   depart: [PickUpAddress.latitude, PickUpAddress.longitude],
     //   arrivee: [DropOffAddress.latitude, DropOffAddress.longitude]
     // });
-    // const neworder = await axios.post(`http://localhost:8000/new_order`,
-    //   {
-    //     idCommande:newCommande.id,
-    //     depart:[PickUpAddress.latitude, PickUpAddress.longitude],
-    //     arrivee:[DropOffAddress.latitude, DropOffAddress.longitude]
-    //   }
-    // );
+     const neworder = await axios.post(`http://127.0.0.1:8020/new_order`,
+       {
+         idCommande:newCommande.id,
+         depart:[PickUpAddress.latitude, PickUpAddress.longitude],
+         arrivee:[DropOffAddress.latitude, DropOffAddress.longitude]
+       }
+     );
     res.status(201).json({ message: "Commande created successfully!", commande: newCommande });
   } catch (error) {
     console.error("Error creating Commande:", error);

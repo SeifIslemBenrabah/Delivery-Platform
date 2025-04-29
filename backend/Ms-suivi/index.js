@@ -307,7 +307,7 @@ app.post("/livreur/route", async (req, res) => {
         if (!livreurId || !trajet || !command) {
             return res.status(400).json({ message: "livreurId, trajet and command are required" });
         }
-
+        
         const points = trajet.map(coord => `point=${coord[1]},${coord[0]}`).join('&');
 
         const url = `https://graphhopper.com/api/1/route?${points}&vehicle=car&locale=en&key=${process.env.GRAPH_HOPPER_API_KEY}&instructions=true`;
@@ -317,6 +317,7 @@ app.post("/livreur/route", async (req, res) => {
 
         // Check if the livreur is connected
         const user = users.get(livreurId);
+
         if (!user || user.role !== "livreur") {
             return res.status(404).json({ error: `Livreur not connected ${livreurId}` });
         }
