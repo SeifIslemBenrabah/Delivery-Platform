@@ -25,7 +25,7 @@ public class AuthenticationService {
                 .firstName(request.getFirstname())
                 .lastName(request.getLastname())
                 .email(request.getEmail())
-                .phone(0)
+                .phone(request.getPhone())
                 .address(null)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .roles(Set.of(Role.CLIENT)) // Default role is CLIENT
