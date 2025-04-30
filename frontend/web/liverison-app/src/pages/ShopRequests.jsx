@@ -1,6 +1,6 @@
 import React ,{useState}from 'react';
 import { useNavigate } from 'react-router-dom';
-const Clients = () => {
+const DeliveryRequests = () => {
   const navigate = useNavigate();
   const handleMoreInfo = (id) => {
     navigate(`/Admin/client/${id}`); // 3. Navigate to client details page
@@ -31,9 +31,22 @@ const Clients = () => {
         image: "https://randomuser.me/api/portraits/men/3.jpg"
       }
     ])
+    const handleBack = () => {
+        navigate(-1);
+      };
   return (
     <div className="w-full h-full flex flex-col  text-white">
-      <div className="relative w-1/3 max-w-md">
+        <div className='flex flex-row items-center justify-between'>
+            <div className='flex flex-row items-center justify-center gap-2'>
+                <button onClick={() => handleBack()}
+                className='text-white bg-black rounded-full'>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                    </svg>
+                </button>
+        <p className='font-bold text-black text-xl'> Shops Requests</p>
+        </div>
+        <div className="relative w-1/3 max-w-md">
         <input
           type="text"
           placeholder="Search..."
@@ -45,6 +58,7 @@ const Clients = () => {
         </svg>
 
       </div>
+        </div>
       <div className="flex-grow overflow-auto rounded-xl bg-backgroundGray shadow-md mt-4 ">
         <table className="min-w-full text-left text-sm text-gray-300">
           <thead className="uppercase text-xs text-black border-b border-gray-600">
@@ -99,4 +113,4 @@ const Clients = () => {
   );
 };
 
-export default Clients;
+export default DeliveryRequests;
