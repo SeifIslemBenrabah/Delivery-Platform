@@ -18,7 +18,7 @@ app.use("/boutiques", catalogueRoutes);
 app.use("/commandes", commandeRoutes);
 
 // ✅ DECLARE THE CLIENT GLOBALLY
-const client = new Eureka({
+/*const client = new Eureka({
   instance: {
     app: 'ms-commande',
     hostName: 'localhost',
@@ -38,7 +38,7 @@ const client = new Eureka({
     port: 8888,
     servicePath: '/eureka/apps/',
   },
-});
+});*/
 
 connectDB().then(() => {
   console.log("✅ Connected to MongoDB!");
@@ -46,13 +46,7 @@ connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
 
-    client.start((error) => {
-      if (error) {
-        console.error('Eureka registration failed:', error);
-      } else {
-        console.log('✅ Registered with Eureka!');
-      }
-    });
+    
   });
 
   // Graceful shutdown
@@ -68,4 +62,4 @@ connectDB().then(() => {
 });
 
 // ✅ NOW client is accessible here:
-module.exports = client;
+//module.exports = client;

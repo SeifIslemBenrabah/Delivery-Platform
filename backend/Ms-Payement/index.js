@@ -83,7 +83,7 @@ await ProduitPaiment.bulkCreate(produitPaiement)
   paiement.checkout_url=checkout_url
   paiement.checkout_id=id
   await paiement.save()
-  res.status(200).json({livraison_price,total:livraison_price+commercent_price})
+  res.status(200).json({livraison_price,total:livraison_price+commercent_price,id:paiement.id})
   // return total price
 
 })

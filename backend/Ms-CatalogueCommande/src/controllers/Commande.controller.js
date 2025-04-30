@@ -1,8 +1,38 @@
 const Commande = require("../models/Commande");
+require("dotenv").config();
 const mongoose = require("mongoose");
 const axios = require('axios');
 const { Eureka } = require('eureka-js-client');
-const client = require('../index')
+//const client = require('../index')
+const PORT = process.env.PORT || 5050;
+const client = new Eureka({
+  instance: {
+    app: 'ms-commande',
+    hostName: 'localhost',
+    ipAddr: '127.0.0.1',
+    port: {
+      '$': PORT,
+      '@enabled': true
+    },
+    vipAddress: 'ms-commande',
+    dataCenterInfo: {
+      '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
+      name: 'MyOwn',
+    },
+  },
+  eureka: {
+    host: 'localhost',
+    port: 8888,
+    servicePath: '/eureka/apps/',
+  },
+});
+client.start((error) => {
+  if (error) {
+    console.error('Eureka registration failed:', error);
+  } else {
+    console.log('✅ Registered with Eureka!');
+  }
+});
 async function getUserDetails(userId) {
   try {
       const response = await axios.get(`http://localhost:5001/users/${userId}`);
@@ -48,27 +78,29 @@ const createCommande = async (req, res) => {
     });
 
     await newCommande.save();
-    // console.log(client);
-    // const instances = client.getInstancesByAppId('CART-API'); 
-    // if (!instances || instances.length === 0) {
-    //   return res.status(503).json({ message: "cart-api not available" });
-    // }
+     console.log(client);
+     const instances = client.getInstancesByAppId('MS-GATEWAY'); 
+     if (!instances || instances.length === 0) {
+       return res.status(503).json({ message: "cart-api not available" });
+     }
 
-    // const { hostName, port } = instances[0]; 
-    // const cartApiUrl = `http://${hostName}:${port}/new_order`;
-
-    // const neworder = await axios.post(cartApiUrl, {
-    //   idCommande: newCommande.id,
-    //   depart: [PickUpAddress.latitude, PickUpAddress.longitude],
-    //   arrivee: [DropOffAddress.latitude, DropOffAddress.longitude]
-    // });
-     const neworder = await axios.post(`http://127.0.0.1:8020/new_order`,
-       {
-         idCommande:newCommande.id,
-         depart:[PickUpAddress.latitude, PickUpAddress.longitude],
-         arrivee:[DropOffAddress.latitude, DropOffAddress.longitude]
-       }
-     );
+     const { hostName, port } = instances[0]; 
+     console.log(port['$'])
+     port2=port['$']
+     const cartApiUrl = `http://${hostName}:${port2}/service-optimization/new_order`;
+     console.log(cartApiUrl)
+     const neworder = await axios.post(cartApiUrl, {
+       idCommande: newCommande.id,
+      depart: [PickUpAddress.latitude, PickUpAddress.longitude],
+       arrivee: [DropOffAddress.latitude, DropOffAddress.longitude]
+     });
+    // const neworder = await axios.post(`http://127.0.0.1:8020/new_order`,
+      // {
+        // idCommande:newCommande.id,
+        // depart:[PickUpAddress.latitude, PickUpAddress.longitude],
+         //arrivee:[DropOffAddress.latitude, DropOffAddress.longitude]
+       //}
+     //);
     res.status(201).json({ message: "Commande created successfully!", commande: newCommande });
   } catch (error) {
     console.error("Error creating Commande:", error);
