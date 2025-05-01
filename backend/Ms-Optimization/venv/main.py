@@ -447,8 +447,21 @@ async def add_order(request:Request):
       clusters[i]["Commandes"].append(order)
      # generate_map(clusters)
       trajet=best_route(clusters[i])
-      await update_liv(clusters[i])
+      #await update_liv(clusters[i])
       print(trajet)
+
+      post_url = "http://localhost:5010/livreur/route"  # Replace "url.com" with your actual URL
+      post_data = {
+        "trajet": trajet,
+        "livreurId": clusters[i]["idlivreur"],
+        "command":order["idCommande"]
+      }
+    
+      try:
+        post_response = requests.post(post_url, json=post_data)
+        print(f"POST to {post_url} response: {post_response.status_code} - {post_response.text}")
+      except Exception as e:
+        print(f"Failed to send POST request: {e}")
       return {"trajet": trajet, "livreur": clusters[i]["idlivreur"]}
       
 @app.post("/accept")
@@ -462,20 +475,34 @@ async def accept(request:Request):
             )
         
      instance = instances[0]
-     livreur=request.get('livreur')
-     commande=request.get('commande')
-     await add_commande_liv(livreur["idLivreur"],commande)
+     data=await request.json()
+     print(data)
+     livreur=data['livreur']
+     print(livreur)
+     commande=data['commande']
+     await add_commande_liv(livreur["livreurId"],commande)
      url_cmd=f"http://{instance.hostName}:{instance.port.port}/service-commande/commandes"
      response = requests.get(url_cmd)
      print(url_cmd)
-     print(response)
      if response.status_code == 200:
        all_commandes = response.json()
-       print(all_commandes)
-       clusters=generate_data(commandes=all_commandes["commandes"],livreurs=[livreur])
+       clusters=await generate_data(commandes=all_commandes["commandes"],livreurs=[livreur])
+       print(clusters)
        trajet=best_route(clusters[0])
        await update_liv(clusters[0])   
-       return {"trajet": trajet, "livreur": livreur["idLivreur"]}
+       post_url = "http://localhost:5010/livreur/route"  # Replace "url.com" with your actual URL
+       post_data = {
+        "trajet": trajet,
+        "livreurId": clusters[0]["idlivreur"],
+        "command":commande
+       }
+    
+       try:
+        post_response = requests.post(post_url, json=post_data)
+        print(f"POST to {post_url} response: {post_response.status_code} - {post_response.text}")
+       except Exception as e:
+        print(f"Failed to send POST request: {e}")
+       return {"trajet": trajet, "livreur": livreur["livreurId"]}
       
 @app.post("/finish")
 async def finish(request:Request):

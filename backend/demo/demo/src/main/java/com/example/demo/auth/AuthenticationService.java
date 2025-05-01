@@ -4,6 +4,7 @@ import com.example.demo.Entity.*;
 import com.example.demo.Repo.JourRepo;
 import com.example.demo.Repo.UserRepo;
 import com.example.demo.Repo.boutiqueRepo;
+import com.example.demo.Repo.commercentRepo;
 import com.example.demo.Repo.heuresTravailRepo;
 import com.example.demo.config.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class AuthenticationService {
     private final boutiqueRepo boutiqueRepo; 
     private final heuresTravailRepo heuresTravailRepo; 
     private final JourRepo jourRepo;
+    private final commercentRepo commercentRepo;
     public AuthenticationResponse register(RegisterRequest request) {
         var user = User.builder()
                 .firstName(request.getFirstname())
@@ -136,14 +138,14 @@ public Boutique createBoutique(Long userId, BoutiqueRequest boutiqueRequest) {
         // Fetch the user by userId
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-    
+        Commercant commercant = commercentRepo.findByUser_Id(user.getId());
         // Create the boutique from the request
         Boutique boutique = new Boutique();
         boutique.setNom(boutiqueRequest.getNom());
         boutique.setAdresse(boutiqueRequest.getAdresse());
     
         // Link the boutique to the user (assuming a user has a list of boutiques)
-        boutique.setCommercant(user);
+        boutique.setCommercant(commercant);
     
         // Save the boutique
         return boutiqueRepo.save(boutique);
