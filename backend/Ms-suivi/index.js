@@ -258,6 +258,22 @@ app.get("/livreursLocations", async (req, res) => {
         res.status(500).json({ status: "error", message: "Internal server error" });
     }
 });
+app.get("/livreurLocation/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = users.get(id);
+
+        if (user && user.role === "livreur" && user.location) {
+            const data = [{ livreurId: id, location: user.location }];
+            res.json({ status: "success", data });
+        } else {
+            res.status(404).json({ status: "error", message: "Livreur not found or has no location" });
+        }
+    } catch (error) {
+        console.error("Error fetching location:", error);
+        res.status(500).json({ status: "error", message: "Internal server error" });
+    }
+});
 
 // Get optimized route using GraphHopper
 // app.get("/route", async (req, res) => {
@@ -298,13 +314,12 @@ app.get("/route", async (req, res) => {
     }
 });
 
-
 app.post("/livreur/route", async (req, res) => {
     try {
         const body = req.body;
-        const { livreurId, trajet, command } = body;
+        const { livreurId, trajet, commands } = body;
 
-        if (!livreurId || !trajet || !command) {
+        if (!livreurId || !trajet || !commands) {
             return res.status(400).json({ message: "livreurId, trajet and command are required" });
         }
 
@@ -315,17 +330,19 @@ app.post("/livreur/route", async (req, res) => {
         const response = await axios.get(url);
         const routeData = response.data;
 
-        // Check if the livreur is connected
         const user = users.get(livreurId);
         if (!user || user.role !== "livreur") {
             return res.status(404).json({ error: `Livreur not connected ${livreurId}` });
         }
 
+        // Fetch command details
+        await fetchCommands(commands);
+
         if (user.ws.readyState === user.ws.OPEN) {
             user.ws.send(JSON.stringify({
                 type: "new_route",
                 route: routeData,
-                command: command
+                command: commands
             }));
             console.log(`Route sent to livreur ${livreurId}`);
         } else {
@@ -341,7 +358,35 @@ app.post("/livreur/route", async (req, res) => {
     }
 });
 
-  
+async function fetchCommands(commands) {
+    for (const element of commands) {
+        try {
+            const res = await axios.get(`http://localhost:5000/commandes/${element}`);
+            let clientId = res.data.commande.idClient;
+            const user = users.get(clientId);
+
+            if (!user || user.role !== "client") {
+                console.log(`Livreur ${clientId} not connected`);
+                continue;
+            }
+
+            if (user.ws.readyState === user.ws.OPEN) {
+                user.ws.send(JSON.stringify({
+                    type: "new_route",
+                    route: routeData, 
+                    command: commands
+                }));
+                console.log(`Route sent to livreur ${clientId}`);
+            } else {
+                console.log(`Livreur ${clientId} WebSocket is not open. Current state: ${user.ws.readyState}`);
+                continue; // Skip this command and proceed to the next
+            }
+        } catch (error) {
+            console.error(`Error fetching command ${element}:`, error);
+        }
+    }
+}
+
   
 const client = new Eureka({
     instance: {
