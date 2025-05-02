@@ -16,6 +16,38 @@ app.use(express.json());
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
+var client = new Eureka({
+    instance: {
+      app: 'ms-suivi',
+      hostName: 'localhost',
+      ipAddr: '127.0.0.1',
+      port: {
+        '$': PORT,
+        '@enabled': true,
+      },
+      vipAddress: 'ms-suivi',
+      dataCenterInfo: {
+        '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
+        name: 'MyOwn',
+      },
+    },
+    eureka: {
+      host: 'localhost',   
+      port: 8888,          
+      servicePath: '/eureka/apps/',
+    },
+  });
+  
+  server.listen(PORT, () => {
+    console.log(`ms-suivi running at http://localhost:${PORT}`);
+    client.start((err) => {
+      if (err) {
+        console.error('ms-suivi failed to register with Eureka:', err);
+      } else {
+        console.log('ms-suivi registered with Eureka');
+      }
+    });
+  });
 // Connect to MongoDB
 connectDB();
 
@@ -24,6 +56,90 @@ const livreurs = new Map();   // Stores livreurs and their associated commandes
 const commandes = new Map();  // Stores all commandes in memory
 const clients = new Map();    // Stores clients and their associated commandes
 
+
+
+
+
+async function fetchCommands(commands, livreurId) {
+    for (const commandId of commands) {
+        try {
+    //         const instances = client.getInstancesByAppId('MS-GATEWAY'); 
+    //          if (!instances || instances.length === 0) {
+    //    return res.status(503).json({ message: "commande not available" });
+    //         }
+    //         const { hostName, port } = instances[0]; 
+    //         console.log(port['$'])
+    //         let port2=port['$']
+    //         const commandeUri = `http://${hostName}:${port2}/service-commande/commandes/`;
+    //         console.log(commandeUri)
+            const res = await axios.get(`http://localhost:5000/commandes/${commandId}`);
+            const commande = res.data.commande;
+            const clientId = commande.idClient;
+            const dropoff = commande.DropOffAddress;
+
+            commandes.set(commandId, { livreurId, clientId, dropoff_location: dropoff });
+
+            const client = users.get(clientId);
+            if (!client || !client.ws) {
+                console.error(`WebSocket for client ${clientId} not found`);
+                continue;
+            }
+
+            const ws = client.ws;
+
+            let livreurData = livreurs.get(livreurId);
+
+            if (!livreurData || !Array.isArray(livreurData.trajet) || livreurData.trajet.length === 0) {
+                const response = await axios.get(`http://localhost:8000/route/${livreurId}`);
+                const { trajet, commandes: cmds } = response.data;
+
+                if (!trajet || trajet.length === 0) {
+                    ws.send(JSON.stringify({ type: "error", message: "No trajet available for this livreur" }));
+                    continue;
+                }
+
+                livreurData = { trajet, commands: cmds };
+                livreurs.set(livreurId, livreurData);
+            }
+
+            // Filter trajet up to drop-off location
+            let shortenedTrajet = livreurData.trajet;
+            if (dropoff && typeof dropoff.longitude === "number" && typeof dropoff.latitude === "number") {
+                const dropoffStr = `${dropoff.longitude.toFixed(6)},${dropoff.latitude.toFixed(6)}`;
+                const index = livreurData.trajet.findIndex(([lng, lat]) =>
+                    `${lng.toFixed(6)},${lat.toFixed(6)}` === dropoffStr
+                );
+
+                if (index !== -1) {
+                    shortenedTrajet = livreurData.trajet.slice(0, index + 1);
+                }
+            }
+
+            const points = shortenedTrajet.map(coord => `point=${coord[1]},${coord[0]}`).join('&');
+            const url = `https://graphhopper.com/api/1/route?${points}&vehicle=car&locale=en&key=${process.env.GRAPH_HOPPER_API_KEY}&instructions=true`;
+
+            try {
+                const graphhopperResponse = await axios.get(url);
+                const routeData = graphhopperResponse.data;
+
+                ws.send(JSON.stringify({
+                    type: "new_route",
+                    route: routeData,
+                    command: livreurData.commands
+                }));
+
+                console.log(`Shortened route sent to client ${clientId}`);
+            } catch (err) {
+                console.error("Error fetching route from GraphHopper:", err);
+                ws.send(JSON.stringify({ type: "error", message: "Failed to fetch route data" }));
+            }
+
+        } catch (error) {
+            console.error(`Error fetching command ${commandId}:`, error);
+        }
+    }
+}
+
 /**
  * Handle incoming WebSocket messages
  */
@@ -31,73 +147,133 @@ async function handleMessage(ws, userId, role, message) {
     try {
         const data = JSON.parse(message);
 
-        // Livreur sends location updates
         if (role === "livreur" && data.location) {
-            users.get(userId).location = data.location;
-            
-            // Update location in MongoDB
-            await Livreur.findByIdAndUpdate(
-                userId,
-                { 
-                    location: { type: "Point", coordinates: data.location },
-                    lastUpdate: new Date()
-                },
-                { new: true }
-            );
-            console.log(`Livreur ${userId} location updated`);
-            
-            // Notify clients about their livreur's location
-            for (const [cmdId, cmdData] of commandes) {
-                if (cmdData.livreurId === userId) {
-                    const client = users.get(cmdData.clientId);
-                    if (client && client.ws.readyState === client.ws.OPEN) {
-                        client.ws.send(
-                            JSON.stringify({
-                                type: "location_update",
-                                livreurId: userId,
-                                location: data.location,
-                                timestamp: new Date().toISOString(),
-                            })
-                        );
+            let livreurData = livreurs.get(userId);
+
+            if (!livreurData || !Array.isArray(livreurData.trajet) || livreurData.trajet.length === 0) {
+                try {
+                    const response = await axios.get(`http://localhost:8000/route/${userId}`);
+                    const { trajet, commandes } = response.data;
+
+                    if (!trajet || trajet.length === 0) {
+                        ws.send(JSON.stringify({ type: "error", message: "No trajet available" }));
+                        return;
                     }
+
+                    livreurData = { trajet, commands: commandes };
+                    livreurs.set(userId, livreurData);
+                } catch (err) {
+                    console.error("Error fetching route from backend:", err);
+                    ws.send(JSON.stringify({ type: "error", message: "Failed to fetch trajet" }));
+                    return;
                 }
             }
-        }
 
-        // Client requests a commande's status
-        if (role === "client" && data.commandeId) {
-            const cmdData = commandes.get(data.commandeId);
-            if (cmdData && cmdData.clientId === userId) {
-                const livreur = users.get(cmdData.livreurId);
-                ws.send(
-                    JSON.stringify({
-                        type: "commande_status",
-                        commandeId: data.commandeId,
-                        livreurId: cmdData.livreurId,
-                        location: livreur ? livreur.location : null,
-                        status: cmdData.status,
-                        timestamp: new Date().toISOString(),
-                    })
-                );
+            // Replace first point in trajet with new location
+            livreurData.trajet[0] = data.location;
+            livreurs.set(userId, livreurData);
+
+            const points = livreurData.trajet.map(coord => `point=${coord[1]},${coord[0]}`).join('&');
+            const url = `https://graphhopper.com/api/1/route?${points}&vehicle=car&locale=en&key=${process.env.GRAPH_HOPPER_API_KEY}&instructions=true`;
+
+            const graphhopperResponse = await axios.get(url);
+            const routeData = graphhopperResponse.data;
+
+            const user = users.get(userId);
+            if (!user || user.role !== "livreur") {
+                ws.send(JSON.stringify({ type: "error", message: `Livreur not connected ${userId}` }));
+                return;
+            }
+            await fetchCommands(livreurData.commands,userId);
+
+            if (user.ws.readyState === user.ws.OPEN) {
+                user.ws.send(JSON.stringify({
+                    type: "new_route",
+                    route: routeData,
+                    command: livreurData.commands
+                }));
+                console.log(`Route sent to livreur ${userId}`);
             } else {
-                ws.send(
-                    JSON.stringify({
-                        type: "error",
-                        message: "Commande not found or you don't have access",
-                    })
+                console.log(`Livreur ${userId} WebSocket is not open. Current state: ${user.ws.readyState}`);
+                ws.send(JSON.stringify({ type: "error", message: "Livreur WebSocket not open" }));
+            }
+            
+        }
+        if (role === "client" && data.commandId) {
+            let command = commandes.get(data.commandId);
+        
+            if (!command || !command.livreurId || userId !== command.clientId) {
+                ws.send(JSON.stringify({ type: "error", message: "Invalid command or livreur not assigned" }));
+                return;
+            }
+        
+            let livreurData = livreurs.get(command.livreurId);
+        
+            if (!livreurData || !Array.isArray(livreurData.trajet) || livreurData.trajet.length === 0) {
+                try {
+                    const response = await axios.get(`http://localhost:8000/route/${command.livreurId}`);
+                    const { trajet, commandes: cmds } = response.data;
+        
+                    if (!trajet || trajet.length === 0) {
+                        ws.send(JSON.stringify({ type: "error", message: "No trajet available for this livreur" }));
+                        return;
+                    }
+        
+                    livreurData = { trajet, commands: cmds };
+                    livreurs.set(command.livreurId, livreurData);
+                } catch (err) {
+                    console.error("Error fetching route for livreur from backend:", err);
+                    ws.send(JSON.stringify({ type: "error", message: "Failed to fetch livreur route" }));
+                    return;
+                }
+            }
+        
+            //Filter trajet up to drop-off location only
+            let shortenedTrajet = livreurData.trajet;
+        
+            const dropoff = command.DropOffAddress;
+            if (dropoff && typeof dropoff.longitude === "number" && typeof dropoff.latitude === "number") {
+                const dropoffStr = `${dropoff.longitude.toFixed(6)},${dropoff.latitude.toFixed(6)}`;
+                const index = livreurData.trajet.findIndex(([lng, lat]) =>
+                    `${lng.toFixed(6)},${lat.toFixed(6)}` === dropoffStr
                 );
+        
+                if (index !== -1) {
+                    shortenedTrajet = livreurData.trajet.slice(0, index + 1);
+                }
+            }
+        
+            const points = shortenedTrajet.map(coord => `point=${coord[1]},${coord[0]}`).join('&');
+            const url = `https://graphhopper.com/api/1/route?${points}&vehicle=car&locale=en&key=${process.env.GRAPH_HOPPER_API_KEY}&instructions=true`;
+        
+            try {
+                const graphhopperResponse = await axios.get(url);
+                const routeData = graphhopperResponse.data;
+        
+                ws.send(JSON.stringify({
+                    type: "new_route",
+                    route: routeData,
+                    command: livreurData.commands
+                }));
+        
+                console.log(`Shortened route sent to client ${userId}`);
+            } catch (err) {
+                console.error("Error fetching route from GraphHopper:", err);
+                ws.send(JSON.stringify({ type: "error", message: "Failed to fetch route data" }));
             }
         }
+        
+        
     } catch (error) {
         console.error("Error handling message:", error);
-        ws.send(
-            JSON.stringify({
-                type: "error",
-                message: "Invalid message format",
-            })
-        );
+        ws.send(JSON.stringify({
+            type: "error",
+            message: "Invalid message format or internal error"
+        }));
     }
 }
+
+
 
 /**
  * Handle WebSocket Connections
@@ -114,16 +290,16 @@ wss.on("connection", (ws, req) => {
     }
 
     users.set(userId, { ws, role, location: null });
-    console.log(`🔵 User ${userId} connected as ${role}. Current users:`, Array.from(users.keys()));
+    console.log(`User ${userId} connected as ${role}. Current users:`, Array.from(users.keys()));
 
     // If a livreur connects, fetch their commandes
     if (role === "livreur") {
-        fetchLivreurCommandes(userId);
+        
     }
     
     // If a client connects, fetch their commandes
     if (role === "client") {
-        fetchClientCommandes(userId);
+       
     }
 
     ws.on("message", (message) => handleMessage(ws, userId, role, message));
@@ -135,53 +311,6 @@ wss.on("connection", (ws, req) => {
 });
 
 
-async function fetchLivreurCommandes(userId) {
-    try {
-        const response = await axios.get(`http://localhost:8000/route/${userId}`);
-        const livreurCommandes = response.data.commandes; 
-        for (let com of livreurCommandes) {
-            const commandeResponse = await axios.get(`http://localhost:5000/commandes/${com}`);
-            const commandeData = commandeResponse.data;
-            
-            const savedCommande = await Commande.create({
-                idClient: new mongoose.Types.ObjectId(commandeData.idClient),
-                idLivreur: new mongoose.Types.ObjectId(userId),
-                dropLocation: { 
-                    type: "Point", 
-                    coordinates: [
-                        commandeData.DropOffAddress.longitude, 
-                        commandeData.DropOffAddress.latitude
-                    ] 
-                },
-                pickupLocation: { 
-                    type: "Point", 
-                    coordinates: [
-                        commandeData.PickUpAddress.longitude, 
-                        commandeData.PickUpAddress.latitude
-                    ] 
-                },
-                status: commandeData.statusCommande,
-            });
-
-            // Save to Map for fast access
-            commandes.set(savedCommande._id.toString(), {
-                livreurId: userId,
-                clientId: commandeData.idClient,
-                status: commandeData.statusCommande,
-            });
-            
-            // Update livreurs map
-            if (!livreurs.has(userId)) {
-                livreurs.set(userId, []);
-            }
-            livreurs.get(userId).push(savedCommande._id.toString());
-            
-            console.log("✅ Commande created & stored in memory:", savedCommande);
-        }
-    } catch (error) {
-        console.error("Error handling commandes:", error);
-    }
-}
 app.post("/notify-livreur", async (req, res) => {
     try {
         const { idLivreur, idCommande, message } = req.body;
@@ -213,32 +342,6 @@ app.post("/notify-livreur", async (req, res) => {
     }
 });
 
-async function fetchClientCommandes(userId) {
-    try {
-        const response = await axios.get(`http://localhost:5000/commandes/client/${userId}`);
-        const clientCommandes = response.data.map(cmd => ({
-            id: cmd._id,
-            status: cmd.statusCommande,
-            date: cmd.date,
-            pickUpCoordinates: [cmd.PickUpAddress.longitude, cmd.PickUpAddress.latitude],
-            dropOffCoordinates: [cmd.DropOffAddress.longitude, cmd.DropOffAddress.latitude]
-        }));
-        
-        clients.set(userId, clientCommandes);
-        console.log(`Fetched ${clientCommandes.length} commandes for client ${userId}`);
-    } catch (error) {
-        console.error('Error fetching client commands:', error);
-        // If this is called from a WebSocket connection, we should send an error message
-        const user = users.get(userId);
-        if (user && user.ws.readyState === user.ws.OPEN) {
-            user.ws.send(JSON.stringify({
-                type: "error",
-                message: "Failed to fetch commandes",
-                error: error.message
-            }));
-        }
-    }
-}
 
 /**
  * REST Endpoints
@@ -275,23 +378,6 @@ app.get("/livreurLocation/:id", async (req, res) => {
     }
 });
 
-// Get optimized route using GraphHopper
-// app.get("/route", async (req, res) => {
-//     try {
-//         const { startLat, startLon, endLat, endLon } = req.query;
-//         if (!startLat || !startLon || !endLat || !endLon) {
-//             return res.status(400).json({ error: "Missing required parameters" });
-//         }
-        
-//         const url = `https://graphhopper.com/api/1/route?point=${startLat},${startLon}&point=${endLat},${endLon}&vehicle=car&key=${process.env.GRAPH_HOPPER_API_KEY}`;
-//         const response = await axios.get(url);
-//         res.json(response.data);
-//     } catch (error) {
-//         console.error("Error fetching route:", error.message);
-//         res.status(500).json({ error: "Internal Server Error" });
-//     }
-// });
-
 app.get("/route", async (req, res) => {
     try {
         const { startLat, startLon, endLat, endLon } = req.query;
@@ -318,11 +404,14 @@ app.post("/livreur/route", async (req, res) => {
     try {
         const body = req.body;
         const { livreurId, trajet, commands } = body;
-
+        
         if (!livreurId || !trajet || !commands) {
             return res.status(400).json({ message: "livreurId, trajet and command are required" });
         }
-        
+        livreurs.set(livreurId, {
+            trajet: trajet,
+            commands: commands
+          });
         const points = trajet.map(coord => `point=${coord[1]},${coord[0]}`).join('&');
 
         const url = `https://graphhopper.com/api/1/route?${points}&vehicle=car&locale=en&key=${process.env.GRAPH_HOPPER_API_KEY}&instructions=true`;
@@ -336,8 +425,7 @@ app.post("/livreur/route", async (req, res) => {
             return res.status(404).json({ error: `Livreur not connected ${livreurId}` });
         }
 
-        // Fetch command details
-        await fetchCommands(commands);
+        await fetchCommands(commands,livreurId);
 
         if (user.ws.readyState === user.ws.OPEN) {
             user.ws.send(JSON.stringify({
@@ -359,65 +447,6 @@ app.post("/livreur/route", async (req, res) => {
     }
 });
 
-async function fetchCommands(commands) {
-    for (const element of commands) {
-        try {
-            const res = await axios.get(`http://localhost:5000/commandes/${element}`);
-            let clientId = res.data.commande.idClient;
-            const user = users.get(clientId);
 
-            if (!user || user.role !== "client") {
-                console.log(`Livreur ${clientId} not connected`);
-                continue;
-            }
-
-            if (user.ws.readyState === user.ws.OPEN) {
-                user.ws.send(JSON.stringify({
-                    type: "new_route",
-                    route: routeData, 
-                    command: commands
-                }));
-                console.log(`Route sent to livreur ${clientId}`);
-            } else {
-                console.log(`Livreur ${clientId} WebSocket is not open. Current state: ${user.ws.readyState}`);
-                continue; // Skip this command and proceed to the next
-            }
-        } catch (error) {
-            console.error(`Error fetching command ${element}:`, error);
-        }
-    }
-}
 
   
-const client = new Eureka({
-    instance: {
-      app: 'ms-suivi',
-      hostName: 'localhost',
-      ipAddr: '127.0.0.1',
-      port: {
-        '$': PORT,
-        '@enabled': true,
-      },
-      vipAddress: 'ms-suivi',
-      dataCenterInfo: {
-        '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
-        name: 'MyOwn',
-      },
-    },
-    eureka: {
-      host: 'localhost',   
-      port: 8888,          
-      servicePath: '/eureka/apps/',
-    },
-  });
-  
-  server.listen(PORT, () => {
-    console.log(`ms-suivi running at http://localhost:${PORT}`);
-    client.start((err) => {
-      if (err) {
-        console.error('ms-suivi failed to register with Eureka:', err);
-      } else {
-        console.log('ms-suivi registered with Eureka');
-      }
-    });
-  });

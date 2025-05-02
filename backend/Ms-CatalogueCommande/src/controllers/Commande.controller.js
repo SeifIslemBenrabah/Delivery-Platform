@@ -89,7 +89,7 @@ const createCommande = async (req, res) => {
      port2=port['$']
      const cartApiUrl = `http://${hostName}:${port2}/service-optimization/new_order`;
      console.log(cartApiUrl)
-     const neworder = await axios.post(cartApiUrl, {
+     const neworder = await axios.post(cartApiUrl, {  
        idCommande: newCommande.id,
       depart: [PickUpAddress.latitude, PickUpAddress.longitude],
        arrivee: [DropOffAddress.latitude, DropOffAddress.longitude]
