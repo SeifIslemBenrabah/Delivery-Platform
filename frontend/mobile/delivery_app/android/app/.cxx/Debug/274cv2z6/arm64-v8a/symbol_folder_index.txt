@@ -1,0 +1,1 @@
+/home/kali/Documents/esi_project/code/Levresion-platform/frontend/delivery_app/build/app/intermediates/cxx/Debug/274cv2z6/obj/arm64-v8a
