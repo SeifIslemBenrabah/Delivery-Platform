@@ -8,9 +8,15 @@ const {createCheckout,createPrice,createProduct}=require('./services/chargily.se
 const Produit=require('./models/produit')
 const Paiment=require('./models/paiement')
 const ProduitPaiment=require('./models/produitpaiement')
-const getCommandeProducts=require("./services/ms_commandes.service");
+const getCommandeProducts=require("./services/ms-commandes.service");
+const getLivPrice=require("./services/ms-suivi.service");
+const getCommandeLiv=require("./services/ms-optimization.service");
 const { calculateCommercentPrice, calculateLivraisonPrice } = require("./utils/calculate");
 const {client,getServiceUrl} = require('./config/eureka-client');
+const Commercent = require("./models/commercent");
+const Livreur = require("./models/livreur");
+const { Kafka } = require('kafkajs');
+
 
 app.use(express.json());
 
@@ -19,7 +25,7 @@ app.post('/calculate_price',async(req,res)=>{
 const { idCommande ,payment_method} = req.body;
 
 // Get commande products
-const products = await getCommandeProducts(idCommande);
+const {products,commande}= await getCommandeProducts(idCommande);
 
 // Fetch all existing products from the database
 let dbProduits = await Produit.findAll();
@@ -65,17 +71,31 @@ await ProduitPaiment.bulkCreate(produitPaiement)
       price:priceId
     };
   }));
+  const livreurId=await getCommandeLiv(commande['_id'])
+  const livreur=await Livreur.findByPk(livreurId)
+
 
 
   //calculate livraison price and create id price
-  const livraison_price=calculateLivraisonPrice()
+  console.log(commande)
+  const livraison_price=await getLivPrice(commande)
   let livraison_id=await createProduct({name:"livraison"})
   let livraison_price_id=await createPrice({idProduit:livraison_id,price:livraison_price})
   paiement.prix_livraison=livraison_price
-  
+  if(livreur){
+    livreur.revenu_total+=livraison_price
+    await livreur.save()
+    paiement.id_livreur=livreurId
+  }
+
+
+
   //create checkout and calculate total price
   const commercent_price=calculateCommercentPrice(productsPrices)
   console.log(commercent_price)
+  console.log(commande['_id'])
+  //paiement.id_livreur=await getCommandeLiv(commande['_id'])
+
   paiement.prix_commercent=commercent_price
   paiement.prix_total=livraison_price+commercent_price
   
@@ -112,52 +132,39 @@ sequelize.sync({ force: true }) // Mettre `true` pour recréer les tables à cha
 )
     .catch(err => console.error('❌ Erreur de synchronisation:', err));
 
-const bodyParser = require('body-parser');
-const { verifySignature } = require('@chargily/chargily-pay');
+
     
 
-app.use(
-  bodyParser.json({
-    verify: (req, res, buf) => {
-      req.rawBody = buf;
-    },
-  })
-);
 
-app.post('/webhook', (req, res) => {
-  const signature = req.get('signature') || '';
-  const payload = req.rawBody;
 
-  if (!signature) {
-    console.log('Signature header is missing');
-    res.sendStatus(400);
-    return;
-  }
 
-  try {
-    if (!verifySignature(payload, signature, API_SECRET_KEY)) {
-      console.log('Signature is invalid');
-      res.sendStatus(403);
-      return;
-    }
-  } catch (error) {
-    console.log(
-      'Something happened while trying to process the request to the webhook'
-    );
-    res.sendStatus(403);
-    return;
-  }
-
-  const event = req.body;
-  // You can use the event.type here to implement your own logic
-  console.log(event);
-
-  res.sendStatus(200);
-});
 
 //webhook success
 
 //webhook failure
+
+app.get('/getCommercent/:id',async(req,res)=>{
+  try {
+  const id = req.params.id;
+  const commercent=await Commercent.findByPk(id)
+  res.status(200).json({commercent})
+  }catch (error) {
+    console.error('Erreur lors de la récupération des données:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des données' });
+  }
+}
+)
+
+app.get('/getLivreur/:id',async(req,res)=>{
+  try {
+  const id = req.params.id;
+  const livreur=await Livreur.findByPk(id)
+  res.status(200).json({livreur})
+  }catch (error) {
+    console.error('Erreur lors de la récupération des données:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des données' });
+  }
+})
 
 
 app.get('/info', (req, res) => {
@@ -176,6 +183,44 @@ app.listen(PORT, () => {
   client.start(); 
 });
 
+
+const kafka = new Kafka({
+  clientId: 'my-express-app',
+  brokers: ['localhost:9092'], // Change this to your Kafka broker(s)
+});
+
+const consumer = kafka.consumer({ groupId: 'my-group' });
+
+const startConsumer = async () => {
+  await consumer.connect();
+  await consumer.subscribe({ topic: 'commercent', fromBeginning: true });
+  await consumer.subscribe({ topic: 'livreur', fromBeginning: true });
+  await consumer.run({
+    eachMessage: async ({ topic, partition, message }) => {
+      
+       console.log(message.value.toString())
+      if(topic=="commercent"){ 
+      const data = JSON.parse(message.value.toString());
+      const commercentId = data.commercentId;
+      const commercent=await Commercent.findByPk(commercentId);
+      if (!commercent) {
+        await Commercent.create({id:commercentId})
+      } 
+     } else if(topic=="livreur"){
+      const data = JSON.parse(message.value.toString());
+      const livreurId = data.livreurId;
+      const livreur=await Livreur.findByPk(livreurId);
+      if (!livreur) {
+        await Livreur.create({id:livreurId})
+      } 
+     }
+
+    },
+  });
+};
+
+
+startConsumer().catch(console.error);
 /*
 
 le debut

@@ -1,31 +1,37 @@
 version: '3.8'
 
 services:
-  mysql:
-    image: mysql   # MySQL image
-    container_name: mysql-container
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root   # Set your MySQL root password
-      MYSQL_DATABASE: test1          # Optional: Set a default database
-
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper2
     ports:
-      - "3306:3306"  # Expose MySQL port
-    volumes:
-      - mysql_data:/var/lib/mysql
+      - "2181:2181"
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+      - ZOOKEEPER_INIT_LIMIT=5
+      - ZOOKEEPER_SYNC_LIMIT=2
+      - ALLOW_ANONYMOUS_LOGIN=yes
 
-  phpmyadmin:
-    image: amd64/phpmyadmin # phpMyAdmin image
-    container_name: phpmyadmin-container
-    restart: always
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka2
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper2:2181  # Connection to ZooKeeper
+      - KAFKA_LISTENER_SECURITY_PROTOCOL=PLAINTEXT
+      - KAFKA_LISTENER_INTER_BROKER_PROTOCOL=PLAINTEXT
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT
+      - KAFKA_LISTENER_NAME_INNER=INTERNAL
+      - KAFKA_LISTENER_PORT=9093
+      - KAFKA_LISTENER_SECURITY_PROTOCOL=PLAINTEXT
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper2:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
-      - mysql
-    environment:
-      PMA_HOST: mysql  # Link phpMyAdmin to the MySQL service
-      PMA_USER: root   # Optional: Set the user to connect
-      PMA_PASSWORD: root  # Optional: Set the user's password
-    ports:
-      - "3737:80"  # Access phpMyAdmin at localhost:8080
-
-volumes:
-  mysql_data:
+      - zookeeper
+    volumes:
+      - ./kafka-data:/var/lib/kafka/data  # Volume for Kafka data persistence

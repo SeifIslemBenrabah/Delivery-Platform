@@ -36,7 +36,7 @@ const Paiement = sequelize.define('Paiement', {
     defaultValue:0
   },
   id_livreur: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.STRING,
     references: {
         model: Livreur,
         key: 'id'

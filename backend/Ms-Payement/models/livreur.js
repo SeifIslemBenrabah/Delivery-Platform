@@ -3,12 +3,11 @@ const sequelize = require('../config/db');
 
 const Livreur = sequelize.define('Livreur', {
   id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.STRING,
     primaryKey: true,
   },
   card_number: {
     type: DataTypes.STRING,
-    allowNull: false,
     unique:true
   },
   revenu_total: {

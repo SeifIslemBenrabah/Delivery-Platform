@@ -1,6 +1,8 @@
 from fastapi import FastAPI,Request,HTTPException # type: ignore
 import random
 import sys
+from starlette.requests import Request
+from starlette.datastructures import Headers
 from fastapi.responses import JSONResponse
 import requests # type: ignore
 import networkx as nx # type: ignore
@@ -22,11 +24,24 @@ import asyncio
 import socket
 from contextlib import asynccontextmanager
 import logging
+from jose import JWTError, jwt
+
+
+SECRET_KEY = "p7G$z!uKm4W@2r*B9dT&1yNqXlC#vA0e"
+ALGORITHM = "HS256"
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+def verify_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        return None
 
 # 📌 Fonction de rappel en cas d'erreur
 def on_err(err_type: str, err: Exception):
@@ -139,7 +154,8 @@ async def getliv(livreur_id: int):
     new_livreur = {
         "id": livreur_id,
         "commandes": [],
-        "trajet": []
+        "trajet": [],
+        "blackList":[]
     }
     
     await collection.insert_one(new_livreur)
@@ -394,6 +410,19 @@ async def add_commande_liv(livreur,commande):
 
     await collection.update_one(query_filter, update_operation)
 
+async def add_black_list(livreur,commande):
+    query_filter = {"id": livreur}
+
+    # 🔹 Extraire seulement les ID des commandes
+
+    update_operation = {
+        "$push": {
+            "blackList": commande  # ✅ Ajouter un ID à la liste
+        }
+    }
+
+    await collection.update_one(query_filter, update_operation)    
+
 async def delete_commande_liv(livreur,commande):
     query_filter = {"id": livreur}
 
@@ -420,7 +449,7 @@ async def add_order(request:Request):
     instance = instances[0]
     print(1)
     url_cmd=f"http://{instance.hostName}:{instance.port.port}/service-commande/commandes"
-    url_livreur="http://localhost:5010/livreursLocations"
+    url_livreur=f"http://{instance.hostName}:{instance.port.port}/service-suivi/api/livreursLocations"
     response = requests.get(url_cmd)
     print(url_cmd)
     print(response)
@@ -515,9 +544,12 @@ async def finish(request:Request):
             )
         
      instance = instances[0]
-     livreur=request.get('livreur')
-     commande=request.get('commande')
-     await delete_commande_liv(livreur['idLivreur'],commande)
+     data=await request.json()
+     print(data)
+     livreur=data['livreur']
+     print(livreur)
+     commande=data['commande']
+     await delete_commande_liv(livreur['livreurId'],commande)
      url_cmd=f"http://{instance.hostName}:{instance.port.port}/service-commande/commandes"
      response = requests.get(url_cmd)
      print(url_cmd)
@@ -525,12 +557,55 @@ async def finish(request:Request):
      if response.status_code == 200:
        all_commandes = response.json()
        print(all_commandes)
-       clusters=generate_data(commandes=all_commandes["commandes"],livreurs=[livreur])
+       clusters=await generate_data(commandes=all_commandes["commandes"],livreurs=[livreur])
        trajet=best_route(clusters[0])
        print("hi") 
        await update_liv(clusters[0])        
        print(trajet) 
-       return {"trajet": trajet, "livreur": livreur['idLivreur']}
+       return {"trajet": trajet, "livreur": livreur['livreurId']}
+      
+@app.post("/refuse")
+async def refuse(request:Request):
+     # generate_map(clusters)
+     
+     instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
+     if not instances:
+            return JSONResponse(
+                status_code=503,
+                content={"message": "MS-GATEWAY service unavailable"}
+            )
+        
+     instance = instances[0]
+     
+     data=await request.json()
+     print(data)
+     livreur=data['livreur']
+     print(livreur)
+     commande=data['commande']
+     url_cmd=f"http://{instance.hostName}:{instance.port.port}/service-commande/commandes/{commande}"
+     await add_black_list(livreur['livreurId'],commande)
+     response = requests.get(url_cmd)
+     print(url_cmd)
+     print(response)
+     if response.status_code == 200:
+      commande = response.json()
+      cmd=commande['commande']
+
+      fake_request = Request(
+          scope={
+              "type": "http",
+              "method": "POST",
+              "headers": Headers({}).raw,
+          },
+          receive=lambda: None,
+      )
+      fake_request._body = {
+          "idCommande": cmd["_id"],
+          "depart": (cmd["PickUpAddress"]["longitude"], cmd["PickUpAddress"]["latitude"]),
+          "arrivee": (cmd["DropOffAddress"]["longitude"], cmd["DropOffAddress"]["latitude"]),
+      }
+      return await add_order(fake_request)
+     
       
 
 @app.get("/route/{id}")
@@ -540,6 +615,18 @@ async def get_route(id):
     if livreur is None:
         return {"trajet": [],"commandes":[]}
     return {"trajet": livreur["trajet"],"commandes":livreur["commandes"]}
+
+async def get_commande_liv(id):
+    livreur = await collection.find_one({"commandes": id})
+    return livreur["id"] if livreur else None
+
+@app.get("/getCommandeLiv/{id}")
+async def get_route(id):
+    livreur = await get_commande_liv(id)
+    print(livreur)
+    if livreur is None:
+        return {"erreur": "noLiv"}
+    return {"livreur":livreur}    
     
 
 @app.get("/")
@@ -642,13 +729,13 @@ livreurs [
         }
     ]
 '''
-async def generate_data(commandes, livreurs):
+async def generate_data(commandes, livreurs,commandes_encours=None):
     clu = []
     
     for liv in livreurs:
-       
-        livdb = await getliv(liv["livreurId"])  # Fetch livreur details
         
+        livdb = await getliv(liv["livreurId"])  # Fetch livreur details
+        if commandes_encours in livdb['blackList'] and commandes_encours: continue
         # Ensure livdb.commandes is a set for faster lookup
         liv_commandes = set(livdb["commandes"]) if livdb["commandes"] else set()
 

@@ -48,7 +48,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Allow session for OAuth2 login
             )
-            .oauth2Login(oauth2 -> oauth2
+             .oauth2Login(oauth2 -> oauth2
                 .authorizationEndpoint(auth -> auth
                     .baseUri("/oauth2/authorization") // OAuth2 authorization endpoint
                 )

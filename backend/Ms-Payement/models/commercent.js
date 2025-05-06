@@ -8,7 +8,6 @@ const Commercent = sequelize.define('Commercent', {
   },
   card_number: {
     type: DataTypes.STRING,
-    allowNull: false,
     unique:true
   },
   revenu_total: {

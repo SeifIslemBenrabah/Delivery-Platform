@@ -7,6 +7,10 @@ import com.example.demo.Repo.boutiqueRepo;
 import com.example.demo.Repo.commercentRepo;
 import com.example.demo.Repo.heuresTravailRepo;
 import com.example.demo.config.JwtService;
+import com.example.demo.kafka.KafkaPublisher;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalTime;
@@ -29,6 +33,9 @@ public class AuthenticationService {
     private final heuresTravailRepo heuresTravailRepo; 
     private final JourRepo jourRepo;
     private final commercentRepo commercentRepo;
+    private final KafkaPublisher kafkaPublisher;
+    private final ObjectMapper objectMapper;
+
     public AuthenticationResponse register(RegisterRequest request) {
         var user = User.builder()
                 .firstName(request.getFirstname())
@@ -39,10 +46,12 @@ public class AuthenticationService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .roles(Set.of(Role.CLIENT)) // Default role is CLIENT
                 .build();
-        userRepo.save(user);
+        //userRepo.save(user);
 
         var jwtToken = jwtService.generateToken(user);
-        var refreshToken = jwtService.generateRefreshToken(user); // Generate refresh token
+        var refreshToken = jwtService.generateRefreshToken(user); 
+        System.out.println(jwtToken);// Generate refresh token
+        System.out.println(jwtService.extractRoles(jwtToken));
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .refreshToken(refreshToken) // Include refresh token in the response
@@ -94,7 +103,16 @@ public class AuthenticationService {
 
         user.setLivreur(livreur);
         user.getRoles().add(Role.LIVREUR); //Add LIVREUR role
-        userRepo.save(user);}
+        userRepo.save(user);
+        try {
+            kafkaPublisher.sendMessage("livreur", objectMapper.writeValueAsString(livreur));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize Livreur object", e);
+        }
+        }
+
+
+
         }
         public void upgradeToCommercant(Long userId, CommercantRequest commercantRequest) {
         var user = userRepo.findById(userId)
@@ -109,6 +127,13 @@ public class AuthenticationService {
         user.setCommercant(commercant);
         user.getRoles().add(Role.COMMERCANT); // Add COMMERCANT role
         userRepo.save(user);
+        try {
+                kafkaPublisher.sendMessage("commercent", objectMapper.writeValueAsString(commercant));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("Failed to serialize commercent object", e);
+            }
+        
+        
     }
     public void setWorkingHours(Long userId, Long boutiqueId, List<HeuresTravailRequest> horaires) {
     Boutique boutique = boutiqueRepo.findById(boutiqueId)
