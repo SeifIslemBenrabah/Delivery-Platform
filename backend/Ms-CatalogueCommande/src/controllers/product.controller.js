@@ -41,7 +41,34 @@ const addProduit = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+const productstatusupdate = async (req,res)=>{
+  try{
+    const produit = await Produit.findById(req.params.id);
+    if (!produit) {
+      return res.status(404).json({ message: "Product not found!" });
+    }
+    const { statusProduct } = req.body;
 
+    if (!['accepte', 'refuse', 'en_attente'].includes(statusProduct)) {
+      return res.status(400).json({ message: "Invalid status!" });
+    }
+
+    const updatedProduct = await Produit.findByIdAndUpdate(
+      req.params.id,
+      { status:statusProduct },
+      { new: true }
+    );
+
+    if (!updatedCommande) {
+      return res.status(404).json({ message: "Commande not found!" });
+    }
+
+    res.status(200).json({ message: "Product status updated!", Product: updatedProduct });
+  }catch (err) {
+    console.error("Error fetching products:", err);
+    res.status(500).json({ message: "Server error", error: err });
+  }
+}
 const getAllProduits = async (req, res) => {
   try {
     const produits = await Produit.find();
@@ -122,10 +149,7 @@ const updateProduit = async (req, res) => {
       if (updateData.Boutiqueid && !mongoose.Types.ObjectId.isValid(updateData.Boutiqueid)) {
         return res.status(400).json({ message: "Invalid Boutiqueid format" });
       }
-  
-      if (updateData.Boutiqueid) {
-        updateData.Boutiqueid = new mongoose.Types.ObjectId(updateData.Boutiqueid);
-      }
+      
   
       if (updateData.infos) {
         try {
