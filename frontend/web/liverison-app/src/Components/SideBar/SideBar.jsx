@@ -41,7 +41,7 @@ const SideBar = () => {
     <nav
       className="flex flex-col h-full
       items-center bg-[#F9F9F9]
-     justify-between justify-self-start p-5 fixed drop-shadow-gray-400">
+     justify-between justify-self-start p-5 fixed drop-shadow-gray-400 z-20">
       <div className="flex flex-col gap-8 items-center">
         <div>
           <img src={verticalLogo} alt="" />

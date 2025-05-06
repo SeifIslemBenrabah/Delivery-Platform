@@ -10,6 +10,10 @@ import Products from "./pages/ShopOwner-pages/Products";
 import Commands from "./pages/ShopOwner-pages/Commands";
 import Shops from "./pages/ShopOwner-pages/Shops";
 import Profile from "./pages/ShopOwner-pages/Profile";
+import ProductRequest from "./pages/ShopOwner-pages/ProductRequest";
+import ProductsList from "./pages/ShopOwner-pages/ProductsList";
+import ShopsList from "./pages/ShopOwner-pages/ShopsList";
+import ShopProfile from "./pages/ShopOwner-pages/ShopProfile";
 
 function App() {
   return (
@@ -21,10 +25,20 @@ function App() {
         <Route path="shopownerhome" element={<ShopOwnerHome />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashBoard />} />
-          <Route path="products" element={<Products />} />
+          <Route path="products" element={<Products />}>
+            <Route index element={<Navigate to="productslist" replace />} />
+            <Route path="productrequest" element={<ProductRequest />} />
+            <Route path="productslist" element={<ProductsList />} />
+          </Route>
           <Route path="commands" element={<Commands />} />
-          <Route path="shops" element={<Shops />} />
-          <Route path="profile" element={<Profile />} />s
+          <Route path="shops" element={<Shops />}>
+            <Route index element={<Navigate to="shopslist" replace />} />
+            <Route path="shopslist" element={<ShopsList />} />
+            <Route path="shopprofile" element={<ShopProfile />}>
+              <Route path=":shopId" element={<ShopProfile />} />
+            </Route>
+          </Route>
+          <Route path="profile" element={<Profile />} />
         </Route>
       </Routes>
     </>
