@@ -89,8 +89,16 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    public Set<Role> extractRoles(String token) {
-        return extractClaim(token, claims -> (Set<Role>) claims.get("roles"));
+    public Set<String> extractRoles(String token) {
+        return extractClaim(token, claims -> {
+            Object rolesObj = claims.get("roles");
+            if (rolesObj instanceof java.util.List<?>) {
+                return ((java.util.List<?>) rolesObj).stream()
+                        .map(Object::toString)
+                        .collect(Collectors.toSet());
+            }
+            return Set.of();
+        });
     }
     
 
@@ -107,4 +115,5 @@ public class JwtService {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+
 }

@@ -1,16 +1,23 @@
 package com.example.demo.auth;
 
+import com.example.demo.config.JwtService;
 import lombok.RequiredArgsConstructor;
+import net.minidev.json.JSONArray;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthenticationController {
     private final AuthenticationService service;
+    private final JwtService jwtService;
     
 
     @PostMapping("/register")
@@ -51,4 +58,42 @@ public class AuthenticationController {
         service.setWorkingHours(userId,boutiqueId,heuresTravailRequest);
         return ResponseEntity.ok("Set working hours successfully");
     }
+
+    @PostMapping("/verify-token")
+    public ResponseEntity<?> verifyToken(@RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        try {
+            if (!jwtService.isTokenValid(token, new DummyUser(jwtService.extractUsername(token)))) {
+
+                return ResponseEntity.badRequest().body(Map.of("valid", false, "message", "Invalid or expired token"));
+            }
+
+            Set<String> roles = jwtService.extractRoles(token);
+            return ResponseEntity.ok(Map.of(
+                    "valid", true,
+                    "username", jwtService.extractUsername(token),
+                    "roles", roles
+            ));
+        } catch (Exception e) {
+            System.out.println(e);
+            return ResponseEntity.badRequest().body(Map.of("valid", false, "message", "Error verifying token"));
+        }
+    }
+
+    static class DummyUser implements UserDetails {
+        private final String username;
+
+        public DummyUser(String username) {
+            this.username = username;
+        }
+
+        @Override public String getUsername() { return username; }
+        @Override public boolean isAccountNonExpired() { return true; }
+        @Override public boolean isAccountNonLocked() { return true; }
+        @Override public boolean isCredentialsNonExpired() { return true; }
+        @Override public boolean isEnabled() { return true; }
+        @Override public java.util.Collection<? extends GrantedAuthority> getAuthorities() { return java.util.List.of(); }
+        @Override public String getPassword() { return ""; }
+    }
 }
+
