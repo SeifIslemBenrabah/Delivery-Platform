@@ -117,12 +117,14 @@ app.get("/failure",async(req,res)=>{
   console.log(req.query.checkout_id)
   
   Paiment.update({status:"failed"},{where:{checkout_id:req.query.checkout_id}})
-  res.send("failure "+req.query.checkout_id)
+  //res.send("failure "+req.query.checkout_id)
+  res.redirect("myapp://payment-failure")
 })
 app.get("/success",async(req,res)=>{
   console.log(req.query.checkout_id)
   Paiment.update({status:"success"},{where:{checkout_id:req.query.checkout_id}})
-  res.send("success "+req.query.checkout_id)
+  res.redirect("myapp://payment-success")
+  //res.send("success "+req.query.checkout_id)
 })
 
 const sequelize = require('./config/db');
