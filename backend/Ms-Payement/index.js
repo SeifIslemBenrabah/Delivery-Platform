@@ -11,6 +11,7 @@ const ProduitPaiment=require('./models/produitpaiement')
 const getCommandeProducts=require("./services/ms-commandes.service");
 const getLivPrice=require("./services/ms-suivi.service");
 const getCommandeLiv=require("./services/ms-optimization.service");
+const verifyToken=require("./services/ms-user.service");
 const { calculateCommercentPrice, calculateLivraisonPrice } = require("./utils/calculate");
 const {client,getServiceUrl} = require('./config/eureka-client');
 const Commercent = require("./models/commercent");
@@ -22,6 +23,12 @@ app.use(express.json());
 
 app.post('/calculate_price',async(req,res)=>{
 
+const token  = req.headers.authorization.split("Bearer ")[1];
+console.log(req.headers.authorization.split("Bearer ")[1])
+const roles = await verifyToken(token);
+if (roles==false) {
+    return res.status(403).json({ message: "Access denied" });  
+}  
 const { idCommande ,payment_method} = req.body;
 
 // Get commande products
@@ -109,6 +116,11 @@ await ProduitPaiment.bulkCreate(produitPaiement)
 })
 
 app.post("/checkout/:id",async(req,res)=>{
+  const  token = req.headers.authorization.split("Bearer ")[1];
+  const roles = await verifyToken(token);
+  if (roles == false || !roles.includes("CLIENT")) {
+    return res.status(403).json({ message: "Access denied" });
+  }
   const id = req.params.id;
   const paiement=await Paiment.findByPk(id)
   res.redirect(paiement.checkout_url)
@@ -116,13 +128,13 @@ app.post("/checkout/:id",async(req,res)=>{
 app.get("/failure",async(req,res)=>{
   console.log(req.query.checkout_id)
   
-  Paiment.update({status:"failed"},{where:{checkout_id:req.query.checkout_id}})
+  await Paiment.update({status:"failed"},{where:{checkout_id:req.query.checkout_id}})
   //res.send("failure "+req.query.checkout_id)
   res.redirect("myapp://payment-failure")
 })
 app.get("/success",async(req,res)=>{
   console.log(req.query.checkout_id)
-  Paiment.update({status:"success"},{where:{checkout_id:req.query.checkout_id}})
+  await Paiment.update({status:"success"},{where:{checkout_id:req.query.checkout_id}})
   res.redirect("myapp://payment-success")
   //res.send("success "+req.query.checkout_id)
 })
