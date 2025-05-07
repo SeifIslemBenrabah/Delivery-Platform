@@ -7,10 +7,10 @@ const productRoutes = require("./Routes/product.routes");
 const catalogueRoutes = require("./Routes/Catalogue.routes");
 const commandeRoutes = require("./Routes/Commande.routes");
 const { Eureka } = require('eureka-js-client');
-
+const cors = require("cors")
 const app = express();
 const PORT = process.env.PORT || 5050;
-
+app.use(cors())
 app.use(express.json());
 app.use("/boutiques", boutiqueRoutes);
 app.use("/products", productRoutes);
