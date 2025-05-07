@@ -26,6 +26,13 @@ spring:
           filters:
             - RewritePath=/service-commande/(?<s>.*), /${s}
           uri: lb://ms-commande
+
+        - id: route4
+          predicates:
+            - Path=/service-user/**
+          filters:
+            - RewritePath=/service-user/(?<s>.*), /${s}
+          uri: lb://ms-user  
         # REST route
         - id: route-suivi-rest
           predicates:

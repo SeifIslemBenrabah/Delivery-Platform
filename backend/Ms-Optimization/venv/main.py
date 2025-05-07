@@ -1,4 +1,4 @@
-from fastapi import FastAPI,Request,HTTPException # type: ignore
+from fastapi import FastAPI,Request,HTTPException,status # type: ignore
 import random
 import sys
 from starlette.requests import Request
@@ -37,11 +37,30 @@ logger = logging.getLogger(__name__)
 
 
 def verify_token(token: str):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except JWTError:
-        return None
+    instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
+    if not instances:
+            return JSONResponse(
+                status_code=503,
+                content={"message": "MS-GATEWAY service unavailable"}
+            )
+        
+    instance = instances[0]
+    url_user=f"http://{instance.hostName}:{instance.port.port}/service-user/api/v1/auth/verify-token"
+    print(token)
+    post_data = {
+        "token": token
+      }
+    headers = {
+          "Authorization": f"Bearer {token}"
+    }
+    print(url_user)
+    response = requests.post(url_user, json=post_data, headers=headers,allow_redirects=False)
+    print(response.text)
+    if response.status_code == 200:
+      data = response.json()
+      return data["roles"]
+    else: return False  
+    
 
 # 📌 Fonction de rappel en cas d'erreur
 def on_err(err_type: str, err: Exception):
@@ -439,6 +458,18 @@ async def delete_commande_liv(livreur,commande):
 
 @app.post("/new_order")
 async def add_order(request:Request):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
+
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
+
+    token = auth_header[len("Bearer "):]  # Supprime le préfixe "Bearer "
+    roles=verify_token(token)
+    if roles == False:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    
     instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
     if not instances:
             return JSONResponse(
@@ -496,6 +527,20 @@ async def add_order(request:Request):
 @app.post("/accept")
 async def accept(request:Request):
      # generate_map(clusters)
+     auth_header = request.headers.get("Authorization")
+     if not auth_header:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
+
+     if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
+
+     token = auth_header[len("Bearer "):]  # Supprime le préfixe "Bearer "
+     roles=verify_token(token)
+     if roles == False:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+     if "LIVREUR" not in roles:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+     
      instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
      if not instances:
             return JSONResponse(
@@ -536,6 +581,21 @@ async def accept(request:Request):
 @app.post("/finish")
 async def finish(request:Request):
      # generate_map(clusters)
+     auth_header = request.headers.get("Authorization")
+     if not auth_header:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
+
+     if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
+
+     token = auth_header[len("Bearer "):]  # Supprime le préfixe "Bearer "
+     roles=verify_token(token)
+     if roles == False:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+     if "LIVREUR" not in roles:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+
      instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
      if not instances:
             return JSONResponse(
@@ -567,6 +627,19 @@ async def finish(request:Request):
 @app.post("/refuse")
 async def refuse(request:Request):
      # generate_map(clusters)
+     auth_header = request.headers.get("Authorization")
+     if not auth_header:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
+
+     if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
+
+     token = auth_header[len("Bearer "):]  # Supprime le préfixe "Bearer "
+     roles=verify_token(token)
+     if roles == False:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+     if "LIVREUR" not in roles:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
      
      instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
      if not instances:
@@ -609,7 +682,19 @@ async def refuse(request:Request):
       
 
 @app.get("/route/{id}")
-async def get_route(id):
+async def get_route(id, request: Request):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
+
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
+
+    token = auth_header[len("Bearer "):]  # Supprime le préfixe "Bearer "
+    roles=verify_token(token)
+    if roles == False:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    
     livreur = await collection.find_one({"id": id})
     print(livreur)
     if livreur is None:
