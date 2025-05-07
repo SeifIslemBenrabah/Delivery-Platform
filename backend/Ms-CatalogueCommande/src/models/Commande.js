@@ -2,21 +2,12 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const CommandeSchema = new Schema({
-    date: {
-        type: Date,
-        default: Date.now
-    },
-    PickUpAddress: {
-        longitude: { type: Number, required: true },
-        latitude: { type: Number, required: true }
-    },
-    DropOffAddress: {
-        longitude: { type: Number, required: true },
-        latitude: { type: Number, required: true }
-    },
+    date: { type: Date, default: Date.now },
+    PickUpAddress: { longitude: Number, latitude: Number },
+    DropOffAddress: { longitude: Number, latitude: Number },
     statusCommande: {
         type: String,
-        enum: ["En cours", "Validée", "Annulée","en livraison","Livré"], 
+        enum: ["En cours", "Validée", "Annulée", "en livraison", "Livré"],
         default: "En cours"
     },
     Livraisontype: {
@@ -25,15 +16,15 @@ const CommandeSchema = new Schema({
         default: "Standard",
         required: true
     },
-    idClient: {
-        type: String, 
-        required: true
-    },
+    idClient: { type: String, required: true },
     produits: [{
         produit: { type: Schema.Types.ObjectId, ref: "Produit", required: true },
         quantity: { type: Number, required: true, min: 1 }
-    }]
+    }],
+    idBoutique: { type: Schema.Types.ObjectId, ref: "Boutique", required: true },
+    idCommercant: { type: String, required: true }
 });
+
 
 const Commande = mongoose.model("Commande", CommandeSchema);
 module.exports = Commande;
