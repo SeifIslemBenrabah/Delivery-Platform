@@ -1,4 +1,6 @@
 const Commande = require("../models/Commande");
+const Produit = require('../models/Produit');
+const {Boutique} = require("../models/Boutique");
 require("dotenv").config();
 const mongoose = require("mongoose");
 const axios = require('axios');
@@ -49,6 +51,7 @@ const createCommande = async (req, res) => {
     if (!DropOffAddress || !Livraisontype || !idClient || !produits) {
       return res.status(400).json({ message: "Missing required fields!" });
     }
+
     // Fetch user details if PickUpAddress is not provided
     if (!PickUpAddress) {
       const userDetails = await getUserDetails(idClient);
@@ -58,55 +61,81 @@ const createCommande = async (req, res) => {
       PickUpAddress = userDetails.PickUpAddress;
     }
 
-    // Validate and format product data
-    const formattedProduits = produits.map((item) => {
-      if (!mongoose.Types.ObjectId.isValid(item.produit)) {
-        return res.status(400).json({ message: `Invalid product ID: ${item.produit}` });
-      }
-      return {
-        produit: new mongoose.Types.ObjectId(item.produit),
-        quantity: item.quantity
-      };
-    });
+    // Validate product IDs
+    const formattedProduits = [];
+    let expectedBoutiqueId = null;
+    let idCommercant = null;
 
+    for (const item of produits) {
+      const { produit, quantity, infos } = item;
+
+      if (!mongoose.Types.ObjectId.isValid(produit)) {
+        return res.status(400).json({ message: `Invalid product ID: ${produit}` });
+      }
+
+      const productDoc = await Produit.findById(produit);
+      if (!productDoc) {
+        return res.status(404).json({ message: `Product not found: ${produit}` });
+      }
+
+      // Find the boutique through the product's catalogue
+      const boutique = await Boutique.findOne({ "catalogues._id": productDoc.Catalogueid });
+      if (!boutique) {
+        console.log(productDoc.Catalogueid);
+        return res.status(404).json({ message: `Boutique not found for product: ${produit}` });
+      }
+
+      if (!expectedBoutiqueId) {
+        expectedBoutiqueId = boutique._id.toString();
+        idCommercant = boutique.idCommercant; 
+      } else if (expectedBoutiqueId !== boutique._id.toString()) {
+        return res.status(400).json({ message: "All products must belong to the same boutique." });
+      }
+
+      formattedProduits.push({
+        produit: new mongoose.Types.ObjectId(produit),
+        quantity,
+        infos
+      });
+    }
+
+    // Proceed with command creation
     const newCommande = new Commande({
       PickUpAddress,
       DropOffAddress,
       Livraisontype,
       idClient,
       produits: formattedProduits,
+      idBoutique: expectedBoutiqueId,
+      idCommercant
     });
 
     await newCommande.save();
-     console.log(client);
-     const instances = client.getInstancesByAppId('MS-GATEWAY'); 
-     if (!instances || instances.length === 0) {
-       return res.status(503).json({ message: "cart-api not available" });
-     }
 
-     const { hostName, port } = instances[0]; 
-     console.log(port['$'])
-     port2=port['$']
-     const cartApiUrl = `http://${hostName}:${port2}/service-optimization/new_order`;
-     console.log(cartApiUrl)
-     const neworder = await axios.post(cartApiUrl, {
-       idCommande: newCommande.id,
+    const instances = client.getInstancesByAppId('MS-GATEWAY');
+    if (!instances || instances.length === 0) {
+      return res.status(503).json({ message: "cart-api not available" });
+    }
+
+    const { hostName, port } = instances[0];
+    const port2 = port['$'];
+    const cartApiUrl = `http://${hostName}:${port2}/service-optimization/new_order`;
+
+    await axios.post(cartApiUrl, {
+      idCommande: newCommande.id,
       depart: [PickUpAddress.latitude, PickUpAddress.longitude],
-       arrivee: [DropOffAddress.latitude, DropOffAddress.longitude]
-     });
-    // const neworder = await axios.post(`http://127.0.0.1:8020/new_order`,
-      // {
-        // idCommande:newCommande.id,
-        // depart:[PickUpAddress.latitude, PickUpAddress.longitude],
-         //arrivee:[DropOffAddress.latitude, DropOffAddress.longitude]
-       //}
-     //);
+      arrivee: [DropOffAddress.latitude, DropOffAddress.longitude]
+    });
+
     res.status(201).json({ message: "Commande created successfully!", commande: newCommande });
+
   } catch (error) {
     console.error("Error creating Commande:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+
 
 
 const getAllCommandes = async (req, res) => {
