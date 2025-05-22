@@ -72,7 +72,7 @@ await ProduitPaiment.bulkCreate(produitPaiement)
   //get products {id_price,quantite}   
 
   let items = await Promise.all(productsPrices.map(async (p) => {
-    const priceId = await createPrice({ amount: p.price, idProduit: p.chargily_id });
+    const priceId = await createPrice({ amount: Math.round(p.price), idProduit: p.chargily_id });
     return {
       quantity: p.quantity,
       price:priceId
@@ -102,7 +102,13 @@ await ProduitPaiment.bulkCreate(produitPaiement)
   console.log(commercent_price)
   console.log(commande['_id'])
   //paiement.id_livreur=await getCommandeLiv(commande['_id'])
-
+  const commercentId=commande['idCommercant']
+  const commercent=await Commercent.findByPk(commercentId)
+  if(commercent){
+    commercent.revenu_total+=commercent_price
+    await commercent.save()
+    paiement.id_commercent=commercentId
+  }
   paiement.prix_commercent=commercent_price
   paiement.prix_total=livraison_price+commercent_price
   
@@ -203,7 +209,7 @@ const kafka = new Kafka({
   brokers: ['localhost:9092'], // Change this to your Kafka broker(s)
 });
 
-const consumer = kafka.consumer({ groupId: 'my-group' });
+const consumer = kafka.consumer({ groupId: 'my-group'+ Date.now() });
 
 const startConsumer = async () => {
   await consumer.connect();

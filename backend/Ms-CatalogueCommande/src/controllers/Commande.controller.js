@@ -119,7 +119,7 @@ const createCommande = async (req, res) => {
 
     const { hostName, port } = instances[0];
     const port2 = port['$'];
-    const cartApiUrl = `http://${hostName}:${port2}/service-optimization/new_order`;
+    const cartApiUrl=`http://172.18.144.1:8020/new_order`; //`http://${hostName}:${port2}/service-optimization/new_order`;
 
     await axios.post(cartApiUrl, {
       idCommande: newCommande.id,

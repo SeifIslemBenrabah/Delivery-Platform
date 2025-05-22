@@ -15,6 +15,7 @@ import folium # type: ignore
 from IPython.display import display, IFrame # type: ignore
 from itertools import permutations
 import os
+from dotenv import load_dotenv
 from geopy.distance import geodesic # type: ignore
 from itertools import permutations
 from pydantic import BaseModel
@@ -27,9 +28,7 @@ import logging
 from jose import JWTError, jwt
 
 
-SECRET_KEY = "p7G$z!uKm4W@2r*B9dT&1yNqXlC#vA0e"
-ALGORITHM = "HS256"
-
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -69,7 +68,7 @@ def on_err(err_type: str, err: Exception):
     else:
         print(f"{err_type}::{err}")
 
-MONGO_URI = "mongodb://localhost:27017"
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 client = AsyncIOMotorClient(MONGO_URI)
 db = client["Optimization"]
 collection = db["livreurs"]
@@ -83,26 +82,21 @@ def get_local_ip():
         return "127.0.0.1"
 def get_instance_port():
     # Chercher un argument --port dans sys.argv
-    for i, arg in enumerate(sys.argv):
-        if arg == '--port' and i+1 < len(sys.argv):
-            return int(sys.argv[i+1])
-    # Retourner un port par défaut si non spécifié
-    return 8000
+    return os.getenv("PORT", 8020)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 Début du lifespan FastAPI")
     ip = get_local_ip()
-    instance_port = get_instance_port()
     try:
         # Assurer l'appel de la méthode asynchrone correctement avec await
         await eureka_client.init_async(
-            eureka_server="http://127.0.0.1:8888/eureka",  # Ton serveur Eureka
+            eureka_server=os.getenv("EUREKA_SERVER", "http://127.0.0.1:8888/eureka"),  # Ton serveur Eureka
             app_name="ms-optimization",                          # Nom du service
-            instance_port=instance_port,
+            instance_port=get_instance_port(),
             instance_ip=ip,
-            health_check_url=f"http://{ip}:8000/health",
-            status_page_url=f"http://{ip}:8000/info",
-            home_page_url=f"http://{ip}:8000/",
+            health_check_url=f"http://{ip}:8020/health",
+            status_page_url=f"http://{ip}:8020/info",
+            home_page_url=f"http://{ip}:8020/",
             on_error=on_err
         )
         print("📡 Enregistré dans Eureka comme 'cart-api'")
@@ -458,6 +452,7 @@ async def delete_commande_liv(livreur,commande):
 
 @app.post("/new_order")
 async def add_order(request:Request):
+    '''
     auth_header = request.headers.get("Authorization")
     if not auth_header:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
@@ -469,7 +464,7 @@ async def add_order(request:Request):
     roles=verify_token(token)
     if roles == False:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    
+    '''
     instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
     if not instances:
             return JSONResponse(
@@ -527,6 +522,7 @@ async def add_order(request:Request):
 @app.post("/accept")
 async def accept(request:Request):
      # generate_map(clusters)
+     '''
      auth_header = request.headers.get("Authorization")
      if not auth_header:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
@@ -540,7 +536,7 @@ async def accept(request:Request):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
      if "LIVREUR" not in roles:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-     
+     '''
      instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
      if not instances:
             return JSONResponse(
