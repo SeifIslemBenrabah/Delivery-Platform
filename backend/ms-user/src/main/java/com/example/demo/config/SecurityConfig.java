@@ -38,7 +38,8 @@ public class SecurityConfig {
                     "/api/v1/auth/**",          // Auth endpoints
                     "/api/v1/auth/verify-token" // Explicitly allow verify-token
                 ).permitAll()
-                        
+                .requestMatchers("/users").hasAuthority("CLIENT")
+                .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
