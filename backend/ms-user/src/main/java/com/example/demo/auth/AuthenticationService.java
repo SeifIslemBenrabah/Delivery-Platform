@@ -99,7 +99,7 @@ public class AuthenticationService {
         user.setLivreur(livreur);
         user.getRoles().add(Role.LIVREUR); // Add LIVREUR role
         userRepo.save(user);
-        kafkaPublisher.sendMessage("livreur", "{\"livreurId\":" + user.getId() + "}");
+       // kafkaPublisher.sendMessage("livreur", "{\"livreurId\":" + user.getId() + "}");
     }
 
     public void upgradeToCommercant(Long userId, CommercantRequest commercantRequest) {
@@ -116,7 +116,7 @@ public class AuthenticationService {
         user.getRoles().add(Role.COMMERCANT); // Add COMMERCANT role
         userRepo.save(user);
 
-        kafkaPublisher.sendMessage("commercent", "{\"commercentId\":" + user.getId() + "}");
+       // kafkaPublisher.sendMessage("commercent", "{\"commercentId\":" + user.getId() + "}");
 
 
     }

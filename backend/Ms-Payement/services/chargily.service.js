@@ -15,7 +15,7 @@ const createProduct= async(productData)=>{
 const createPrice = async(priceData)=>{
     console.log(priceData)
     const newPrice = await client.createPrice({
-      amount: 100,
+      amount: priceData.amount > 100 ? priceData.amount : 100,
       currency: 'dzd',
       product_id: priceData.idProduit,
       
