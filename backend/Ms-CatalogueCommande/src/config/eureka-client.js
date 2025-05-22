@@ -1,0 +1,37 @@
+const { Eureka } = require('eureka-js-client');
+require("dotenv").config();
+
+const client = new Eureka({
+  instance: {
+    app: 'ms-commande', 
+    hostName: 'localhost',
+    ipAddr: '127.0.0.1',
+    port: {
+      '$': process.env.PORT || 5050,
+      '@enabled': true,
+    },
+    vipAddress: 'ms-commande',
+    dataCenterInfo: {
+      '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
+      name: 'MyOwn',
+    },
+    statusPageUrl: `http://localhost:${process.env.PORT || 5050}/info`,
+    healthCheckUrl: `http://localhost:${process.env.PORT || 5050}/health`,
+  },
+  eureka: {
+    host: 'localhost',
+    port: 8888,
+    servicePath: '/eureka/apps/',
+  },
+});
+
+function getServiceUrl(serviceName) {
+  const instances = client.getInstancesByAppId(serviceName.toUpperCase());
+  if (instances && instances.length > 0) {
+    const instance = instances[0];
+    return `http://${instance.hostName}:${instance.port.$}`;
+  }
+  throw new Error(`Service ${serviceName} not found`);
+}
+
+module.exports = { client, getServiceUrl };

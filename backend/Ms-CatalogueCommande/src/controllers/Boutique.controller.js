@@ -3,6 +3,10 @@ const {Boutique} = require("../models/Boutique");
 
 const addBoutique = async (req, res) => {
   try {
+    if (!req.user.roles.includes('COMMERCANT')) {
+      return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
+    }
+    
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded!" });
     }
@@ -22,6 +26,8 @@ const addBoutique = async (req, res) => {
     console.log("Image uploaded:", uploadResult.secure_url);
 
     const boutique = await Boutique.create({
+      _id:req.body.id,
+      description:req.body.description,
       nomBoutique: req.body.nomBoutique,
       address: req.body.address,
       photo: uploadResult.secure_url,
@@ -36,6 +42,31 @@ const addBoutique = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+const boutiquestatusupdate = async (req,res)=>{
+  try{
+    if (!req.user.roles.includes('ADMIN')) {
+      return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
+    }
+    const boutique = await Boutique.findById(req.params.id);
+    if(boutique){
+      return res.status(404).json({ message: "Boutique not found!" })
+    }
+    const {statusBoutique} = req.body;
+    if (!['accepte', 'refuse', 'en_attente'].includes(statusBoutique)) {
+      return res.status(400).json({ message: "Invalid status!" });
+    }
+    const updatedBoutique = await Produit.findByIdAndUpdate(
+      req.params.id,
+      { status: statusBoutique },
+      { new: false }
+    );
+    res.status(200).json({ message: "Product status updated!", Product: updatedBoutique });
+  }
+  catch(error){
+    console.error("Error fetching products:", err);
+    res.status(500).json({ message: "Server error", error: err });
+  }
+}
 const getAllBoutiques = async (req, res) => {
     try {
       const boutiques = await Boutique.find();
@@ -77,7 +108,9 @@ const getAllBoutiques = async (req, res) => {
   const updateBoutique = async (req, res) => {
     try {
       const { nomBoutique, address, idCommercant } = req.body;
-  
+      if (!req.user.roles.includes('COMMERCANT')) {
+        return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
+      }
       let boutique = await Boutique.findById(req.params.id);
       if (!boutique) {
         return res.status(404).json({ message: "Boutique not found" });
@@ -115,6 +148,9 @@ const getAllBoutiques = async (req, res) => {
   };
   const deleteBoutique = async (req, res) => {
     try {
+      if (!req.user.roles.includes('COMMERCANT')) {
+        return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
+      }
       const boutique = await Boutique.findById(req.params.id);
       if (!boutique) {
         return res.status(404).json({ message: "Boutique not found" });
@@ -140,5 +176,6 @@ module.exports = {
     getBoutiqueById,
     updateBoutique,
     deleteBoutique,
-    getBoutiqueByIdCommercant
+    getBoutiqueByIdCommercant,
+    boutiquestatusupdate
  };
