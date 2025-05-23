@@ -10,19 +10,20 @@ function auth() {
       }
 
       const token = authHeader.split(' ')[1];
-      const url = `${getServiceUrl('MS-GATEWAY')}/service-user/api/v1/auth/verify-token`;
-
+      const url = `http://localhost:8082/api/v1/auth/verify-token`;
+      console.log(token);
+      console.log('URL:', url);
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ token }),
       });
-
+      
       if (response.status !== 200) {
-        console.log(response)
+       // console.log(response)
+        console.log('Invalid token response:', response.status);
         return res.status(403).send('Invalid token');
       }
 
