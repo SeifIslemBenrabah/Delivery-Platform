@@ -12,8 +12,10 @@ const BoutiqueSchema = new Schema({
     description:{ type: String},
     address: {
         longitude: { type: Number, required: true },
-        latitude: { type: Number, required: true }
+        latitude: { type: Number, required: true },
+        name:{type:String , required: true}
     },
+    phone:{type:String , required: true},
     status: {
         type: String,
         enum: ['accepte', 'refuse', 'en_attente'],
