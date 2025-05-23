@@ -1,5 +1,6 @@
-const fetch = require('node-fetch'); 
-const {client,getServiceUrl} = require('../config/eureka-client');
+import fetch from 'node-fetch';
+import { getServiceUrl } from './eureka-client.js';
+
 
 function auth() {
   return async (req, res, next) => {
@@ -22,7 +23,6 @@ function auth() {
       });
 
       if (response.status !== 200) {
-        console.log(response)
         return res.status(403).send('Invalid token');
       }
 
@@ -40,5 +40,36 @@ function auth() {
     }
   };
 }
+async function verifyToken(token) {
+  try {
+    const url = `${getServiceUrl('MS-GATEWAY')}/service-user/api/v1/auth/verify-token`;
+    console.log('Calling verify-token at:', url);
 
-module.exports = auth;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ token }), 
+    });
+
+    if (response.status !== 200) {
+      console.log('Invalid token. Status:', response.status);
+      const errorText = await response.text(); // 🔥 More debug info
+      console.log('Error response:', errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log('Token verified. User data:', data);
+    return data;
+  } catch (err) {
+    console.error('Auth middleware error:', err);
+    console.log('Internal Server Error');
+    return null;
+  }
+}
+
+
+export { auth, verifyToken };

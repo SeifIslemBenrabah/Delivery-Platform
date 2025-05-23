@@ -8,7 +8,8 @@ import { Livreur } from "./models/Livreur.js";
 import { Commande } from "./models/Commande.js";
 import mongoose from "mongoose";
 import connectDB from "./config/db.js";
-import { Eureka } from 'eureka-js-client';
+import {client} from "./config/eureka-client.js"
+import { verifyToken,auth } from './config/auth.js'
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5010;
@@ -102,27 +103,47 @@ async function handleMessage(ws, userId, role, message) {
 /**
  * Handle WebSocket Connections
  */
-wss.on("connection", (ws, req) => {
+wss.on("connection", async(ws, req) => {
     const { query } = parse(req.url, true);
     const userId = query.userId;
+    const token = query.token;
     const role = query.role;
-
+    if (!token) {
+        ws.send(JSON.stringify({ type: 'error', message: 'Missing token' }));
+        ws.close();
+        console.log("Missing token");
+        return;
+      }
+      const data = await verifyToken(token);
+      console.log(data)
+      if (!data || !data.valid) {
+        console.log('Unauthorized: Invalid token or verification failed');
+        ws.close(); 
+        console.log('errorrrrrrrrrr')
+        return;
+      }
     if (!userId || !role) {
         ws.send(JSON.stringify({ type: "error", message: "Missing userId or role" }));
         ws.close();
+        console.log("missing userid or role")
         return;
     }
-
+    if (!data.roles || !data.roles.includes(role)) {
+        ws.send(JSON.stringify({ type: 'error', message: 'Unauthorized role' }));
+        ws.close();
+        console.log("Unauthorized role")
+        return;
+      }
     users.set(userId, { ws, role, location: null });
     console.log(`🔵 User ${userId} connected as ${role}. Current users:`, Array.from(users.keys()));
 
     // If a livreur connects, fetch their commandes
-    if (role === "livreur") {
+    if (role === "LIVREUR") {
         fetchLivreurCommandes(userId);
     }
     
     // If a client connects, fetch their commandes
-    if (role === "client") {
+    if (role === "CLIENT") {
         fetchClientCommandes(userId);
     }
 
@@ -182,7 +203,7 @@ async function fetchLivreurCommandes(userId) {
         console.error("Error handling commandes:", error);
     }
 }
-app.post("/notify-livreur", async (req, res) => {
+app.post("/notify-livreur",auth(), async (req, res) => {
     try {
         const { idLivreur, idCommande, message } = req.body;
 
@@ -244,7 +265,7 @@ async function fetchClientCommandes(userId) {
  * REST Endpoints
  */
 // Get all livreurs' locations
-app.get("/livreursLocations", async (req, res) => {
+app.get("/livreursLocations",auth() ,async (req, res) => {
     try {
         const livreursLocations = [];
         for (const [userId, user] of users.entries()) {
@@ -276,7 +297,7 @@ app.get("/livreursLocations", async (req, res) => {
 //     }
 // });
 
-app.get("/route", async (req, res) => {
+app.get("/route",auth(), async (req, res) => {
     try {
         const { startLat, startLon, endLat, endLon } = req.query;
         if (!startLat || !startLon || !endLat || !endLon) {
@@ -299,7 +320,7 @@ app.get("/route", async (req, res) => {
 });
 
 
-app.post("/livreur/route", async (req, res) => {
+app.post("/livreur/route",auth(), async (req, res) => {
     try {
         const body = req.body;
         const { livreurId, trajet, command } = body;
@@ -344,35 +365,8 @@ app.post("/livreur/route", async (req, res) => {
 
   
   
-const client = new Eureka({
-    instance: {
-      app: 'ms-suivi',
-      hostName: 'localhost',
-      ipAddr: '127.0.0.1',
-      port: {
-        '$': PORT,
-        '@enabled': true,
-      },
-      vipAddress: 'ms-suivi',
-      dataCenterInfo: {
-        '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
-        name: 'MyOwn',
-      },
-    },
-    eureka: {
-      host: 'localhost',   
-      port: 8888,          
-      servicePath: '/eureka/apps/',
-    },
-  });
-  
+
   server.listen(PORT, () => {
     console.log(`ms-suivi running at http://localhost:${PORT}`);
-    client.start((err) => {
-      if (err) {
-        console.error('ms-suivi failed to register with Eureka:', err);
-      } else {
-        console.log('ms-suivi registered with Eureka');
-      }
-    });
+    client.start()
   });

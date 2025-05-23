@@ -1,6 +1,7 @@
-const { Eureka } = require('eureka-js-client');
-require("dotenv").config();
-const os = require('os');
+import { Eureka } from 'eureka-js-client';
+import dotenv from "dotenv";
+dotenv.config();
+import os from 'os';
 
 // Get local IP address
 function getLocalIp() {
@@ -13,25 +14,25 @@ function getLocalIp() {
     }
   }
   return '127.0.0.1'; // fallback
-}
+} 
 
 const localIp = getLocalIp();
 const client = new Eureka({
   instance: {
-    app: 'ms-commande', 
+    app: 'ms-suivi', 
     hostName: localIp,
     ipAddr: localIp,
     port: {
-      '$': process.env.PORT || 5050,
+      '$': process.env.PORT || 5010,
       '@enabled': true,
     },
-    vipAddress: 'ms-commande',
+    vipAddress: 'ms-suivi',
     dataCenterInfo: {
       '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
       name: 'MyOwn',
     },
-    statusPageUrl: `http://localhost:${process.env.PORT || 5050}/info`,
-    healthCheckUrl: `http://localhost:${process.env.PORT || 5050}/health`,
+    statusPageUrl: `http://localhost:${process.env.PORT || 5010}/info`,
+    healthCheckUrl: `http://localhost:${process.env.PORT || 5010}/health`,
   },
   eureka: {
     host: 'localhost',
@@ -49,4 +50,4 @@ function getServiceUrl(serviceName) {
   throw new Error(`Service ${serviceName} not found`);
 }
 
-module.exports = { client, getServiceUrl };
+export  { client, getServiceUrl };
