@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import com.example.demo.Entity.*;
 
 import java.util.List;
 import java.util.Map;
@@ -47,9 +48,9 @@ public class AuthenticationController {
     }
 
     @PostMapping("/create-boutique/{userId}")
-    public ResponseEntity<String> createBoutique(@PathVariable Long userId, @RequestBody BoutiqueRequest boutiqueRequest) {
-        service.createBoutique(userId, boutiqueRequest);
-        return ResponseEntity.ok("Boutique created successfully");
+    public ResponseEntity<?> createBoutique(@PathVariable Long userId, @RequestBody BoutiqueRequest boutiqueRequest) {
+        Boutique boutique = service.createBoutique(userId, boutiqueRequest);
+        return ResponseEntity.ok(boutique);
     }
 
     @PostMapping("/set-working-hours/{userId}/{boutiqueId}")
