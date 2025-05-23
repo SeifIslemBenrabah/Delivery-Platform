@@ -5,6 +5,9 @@ const mongoose = require("mongoose");
 
 const addProduit = async (req, res) => {
   try {
+    if (!req.user.roles.includes('COMMERCANT')) {
+      return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
+    }
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded!" });
     }
@@ -43,6 +46,9 @@ const addProduit = async (req, res) => {
 };
 const productstatusupdate = async (req,res)=>{
   try{
+    if (!req.user.roles.includes('ADMIN')) {
+      return res.status(403).json({ message: "Access denied. Not a ADMIN." });
+    }
     const produit = await Produit.findById(req.params.id);
     if (!produit) {
       return res.status(404).json({ message: "Product not found!" });
@@ -58,10 +64,6 @@ const productstatusupdate = async (req,res)=>{
       { status:statusProduct },
       { new: true }
     );
-
-    if (!updatedCommande) {
-      return res.status(404).json({ message: "Commande not found!" });
-    }
 
     res.status(200).json({ message: "Product status updated!", Product: updatedProduct });
   }catch (err) {
@@ -114,7 +116,6 @@ const getProduitById = async (req, res) => {
 const getProduitByIdCatalogue = async (req, res) => {
   try {
     const { boutiqueId, catalogueId } = req.params;
-
     if (!mongoose.Types.ObjectId.isValid(boutiqueId)) {
       return res.status(400).json({ msg: "Invalid boutique ID format." });
     }
@@ -145,6 +146,9 @@ const getProduitByIdCatalogue = async (req, res) => {
 };
 const updateProduit = async (req, res) => {
     try {
+      if (!req.user.roles.includes('COMMERCANT')) {
+        return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
+      }
       let updateData = { ...req.body };
       if (updateData.Boutiqueid && !mongoose.Types.ObjectId.isValid(updateData.Boutiqueid)) {
         return res.status(400).json({ message: "Invalid Boutiqueid format" });
@@ -191,6 +195,9 @@ const updateProduit = async (req, res) => {
 
 const deleteProduit = async (req, res) => {
   try {
+    if (!req.user.roles.includes('COMMERCANT')) {
+      return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
+    }
     const produit = await Produit.findByIdAndDelete(req.params.id);
     if (!produit) {
       return res.status(404).json({ message: "Product not found!" });
@@ -210,5 +217,6 @@ module.exports = {
   updateProduit,
   deleteProduit,
   getProduitBySearch,
-  getProduitByIdCatalogue
+  getProduitByIdCatalogue,
+  productstatusupdate
 };

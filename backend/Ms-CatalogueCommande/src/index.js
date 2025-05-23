@@ -6,60 +6,36 @@ const boutiqueRoutes = require("./Routes/boutique.routes");
 const productRoutes = require("./Routes/product.routes");
 const catalogueRoutes = require("./Routes/Catalogue.routes");
 const commandeRoutes = require("./Routes/Commande.routes");
-const { Eureka } = require('eureka-js-client');
-const cors = require("cors")
+const {client} =require("./config/eureka-client")
+const cors = require("cors");
+
 const app = express();
 const PORT = process.env.PORT || 5050;
-app.use(cors())
+
+app.use(cors());
 app.use(express.json());
+
 app.use("/boutiques", boutiqueRoutes);
 app.use("/products", productRoutes);
 app.use("/boutiques", catalogueRoutes);
 app.use("/commandes", commandeRoutes);
 
-// ✅ DECLARE THE CLIENT GLOBALLY
-/*const client = new Eureka({
-  instance: {
-    app: 'ms-commande',
-    hostName: 'localhost',
-    ipAddr: '127.0.0.1',
-    port: {
-      '$': PORT,
-      '@enabled': true
-    },
-    vipAddress: 'ms-commande',
-    dataCenterInfo: {
-      '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
-      name: 'MyOwn',
-    },
-  },
-  eureka: {
-    host: 'localhost',
-    port: 8888,
-    servicePath: '/eureka/apps/',
-  },
-});*/
+connectDB()
+  .then(() => {
+    console.log(" Connected to MongoDB!");
 
-connectDB().then(() => {
-  console.log("✅ Connected to MongoDB!");
+    app.listen(PORT, () => {
+      console.log(` Server running on http://localhost:${PORT}`);
+      client.start(); 
+    });
 
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-
-    
-  });
-
-  // Graceful shutdown
-  process.on('SIGINT', () => {
-    client.stop(() => {
-      console.log('🛑 Eureka client stopped.');
+    // Graceful shutdown - no Eureka client anymore
+    process.on('SIGINT', () => {
+      console.log(' Server shutting down.');
       process.exit();
     });
+  })
+  .catch((err) => {
+    console.error("MongoDB Connection Failed:", err);
+    process.exit(1);
   });
-}).catch((err) => {
-  console.error("MongoDB Connection Failed:", err);
-  process.exit(1);
-});
-
-// ✅ NOW client is accessible here:
-//module.exports = client;

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const auth = require('../middlewares/auth');
 const {
   createCommande,
   getAllCommandes,
@@ -10,21 +11,21 @@ const {
 } = require("../controllers/Commande.controller");
 
 // Create a new commande
-router.post("/", createCommande);
+router.post("/", auth(), createCommande);
 
 // Get all commandes (possibly with filters)
-router.get("/", getAllCommandes);
+router.get("/", auth(), getAllCommandes);
 
 // Get commandes by client ID (added as a query parameter route)
-router.get("/client/:clientId", getCommandeByClientId);
+router.get("/client/:clientId", auth(), getCommandeByClientId);
 
 // Get a specific commande by ID
-router.get("/:commandeId", getCommandeById);
+router.get("/:commandeId", auth(), getCommandeById);
 
 // Update commande status
-router.put("/:commandeId/status", updateCommandeStatus);
+router.put("/:commandeId/status", auth(), updateCommandeStatus);
 
 // Delete a commande
-router.delete("/:commandeId", deleteCommande);
+router.delete("/:commandeId", auth(), deleteCommande);
 
 module.exports = router;
