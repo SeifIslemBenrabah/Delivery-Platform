@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import shopImg from "../../assets/img/Shop-pic.png";
 import ShopCard from "../../Components/ShopCard";
 import { FiSearch } from "react-icons/fi";
@@ -7,9 +7,12 @@ import { FaArrowRight, FaRegCircleXmark } from "react-icons/fa6";
 import { IoPricetagsOutline } from "react-icons/io5";
 import { SlPicture } from "react-icons/sl";
 import { BsFileEarmarkPlus } from "react-icons/bs";
+import { IoCalendarClearOutline } from "react-icons/io5";
 import { AiOutlinePlusCircle } from "react-icons/ai";
+import { GoLocation } from "react-icons/go";
 import InputLabel from "../../Components/InputLabel";
 import axios from "axios";
+import ShopContext from "../../Context/ShopProvider";
 
 const ShopsList = () => {
   const [search, setSearch] = useState("");
@@ -17,51 +20,94 @@ const ShopsList = () => {
   const [shopType, setShopType] = useState("");
   const [shopPicture, setShopPicture] = useState("");
   const [shopPapier, setShopPapier] = useState("");
+  const [shopLocation, setShopLocation] = useState("");
+  const [workTime, setWorkTime] = useState("");
   const [openShopForm, setOpenShopForm] = useState(false);
   const [shopFormError, setShopFormError] = useState("");
+  const { setShopAdd } = useContext(ShopContext);
   // const [allShops, setallShops] = useState([]);
   const [shopsList, setShopsList] = useState([
-    // {
-    //   name: "Shop Name",
-    //   type: "Shop Type",
-    //   location: "sidi belabbes, maquoni",
-    //   picture: `${shopImg}`,
-    // },
+    {
+      name: "Shop Name",
+      type: "Shop Type",
+      location: "sidi belabbes, maquoni",
+      picture: `${shopImg}`,
+    },
   ]);
 
-  useEffect(() => {
-    async function fetchShops() {
-      try {
-        const responce = await axios.get("http://localhost:5000/boutiques");
-        setShopsList(responce.data);
-        console.log(responce.data);
-      } catch (error) {
-        if (error.responce.status === 400) {
-          console.log("error 400");
-        }
-      }
-    }
-    fetchShops();
-  }, []);
-
+  // useEffect(() => {
+  //   async function fetchShops() {
+  //     try {
+  //       const responce = await axios.get("http://localhost:5000/boutiques");
+  //       setShopsList(responce.data);
+  //       console.log(responce.data);
+  //     } catch (error) {
+  //       if (error.responce.status === 400) {
+  //         console.log("error 400");
+  //       }
+  //     }
+  //   }
+  //   fetchShops();
+  // }, []);
+  // closer shop request pop window fuction
   const closeBtnHandler = () => {
     setOpenShopForm(false);
+    setShopName("");
+    setShopPicture("");
+    setShopType("");
+    setShopPapier("");
+    setShopLocation("");
+    setWorkTime("");
   };
-  const shopRequestHandler = () => {
+  const shopRequestHandler = async () => {
     console.log("this form is working");
     if (
       shopName === "" ||
       shopType === "" ||
       shopPapier === "" ||
-      shopPicture === ""
+      shopPicture === "" ||
+      shopLocation === "" ||
+      workTime === ""
     ) {
       setShopFormError("You are missing information!");
     } else {
-      setOpenShopForm(false);
+      closeBtnHandler();
+    }
+
+    // posting the shop request in the db
+    //
+    //
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/boutiques",
+        JSON.stringify({
+          shopName,
+          shopType,
+          shopPicture,
+          shopPapier,
+          shopLocation,
+          workTime,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
+      console.log(JSON.stringify(response?.data));
+      setShopAdd({ shopName, shopType, shopPicture, shopPapier });
       setShopName("");
-      setShopPicture("");
       setShopType("");
+      setShopPicture("");
       setShopPapier("");
+      console.log("the shop is posted");
+    } catch (error) {
+      if (!error?.response) {
+        setShopFormError("no server response");
+      } else if (error.response?.status === 400) {
+        setShopFormError("invalid informations you entered");
+      } else {
+        setShopFormError("sending request is failed");
+      }
     }
   };
   return (
@@ -107,8 +153,8 @@ const ShopsList = () => {
       {/* this is add shop pop up window */}
       {openShopForm && (
         <div className="fixed inset-0 bg-[#000000a1] flex items-center justify-center gap-2.5 z-10">
-          <div className="bg-white flex flex-col gap-4 w-[400px] py-4 px-4 rounded-[16px] ml-48">
-            <div className="flex justify-between mb-6">
+          <div className="bg-white flex flex-col gap-3 w-[400px] py-4 px-4 rounded-[16px] ml-48">
+            <div className="flex justify-between mb-2">
               <h1 className=" w-full text-center">Add Shop Request</h1>
               <button
                 onClick={() => {
@@ -136,23 +182,37 @@ const ShopsList = () => {
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor="" className="text-gray-500 ">
-                Shop Type
+              <label htmlFor="" className="text-gray-500 mb-1.5 ">
+                Shop Location
               </label>
-              <div className="relative">
-                <IoPricetagsOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
-                <select
-                  id="basic-select"
-                  name="basic-select"
+              <div className="relative bg-white">
+                <GoLocation className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
+                <input
+                  type="text"
+                  placeholder="shop location"
                   className="pl-10 py-2 border rounded-md w-full"
+                  value={shopName}
                   onChange={(e) => {
-                    setShopType(e.target.value);
-                  }}>
-                  <option value="">Select shop type</option>
-                  <option value="option1">Type1</option>
-                  <option value="option2">Type2</option>
-                  <option value="option3">Type3</option>
-                </select>
+                    setShopName(e.target.value);
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="" className="text-gray-500 mb-1.5 ">
+                Work Time
+              </label>
+              <div className="relative bg-white">
+                <IoCalendarClearOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
+                <input
+                  type="time"
+                  placeholder="work time"
+                  className="pl-10 py-2 border rounded-md w-full"
+                  value={shopName}
+                  onChange={(e) => {
+                    setShopName(e.target.value);
+                  }}
+                />
               </div>
             </div>
             <div className="flex gap-5 justify-between mt-4 items-center">

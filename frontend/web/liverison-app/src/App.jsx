@@ -14,6 +14,8 @@ import ProductRequest from "./pages/ShopOwner-pages/ProductRequest";
 import ProductsList from "./pages/ShopOwner-pages/ProductsList";
 import ShopsList from "./pages/ShopOwner-pages/ShopsList";
 import ShopProfile from "./pages/ShopOwner-pages/ShopProfile";
+import CommandsList from "./pages/ShopOwner-pages/CommandsList";
+import CommandDetails from "./pages/ShopOwner-pages/CommandDetails";
 
 function App() {
   return (
@@ -30,7 +32,13 @@ function App() {
             <Route path="productrequest" element={<ProductRequest />} />
             <Route path="productslist" element={<ProductsList />} />
           </Route>
-          <Route path="commands" element={<Commands />} />
+          <Route path="commands" element={<Commands />}>
+            <Route index element={<Navigate to="commandslist" replace />} />
+            <Route path="commandslist" element={<CommandsList />} />
+            <Route path="commandsdetails" element={<CommandDetails />}>
+              <Route path=":commandId" element={<CommandDetails />} />
+            </Route>
+          </Route>
           <Route path="shops" element={<Shops />}>
             <Route index element={<Navigate to="shopslist" replace />} />
             <Route path="shopslist" element={<ShopsList />} />

@@ -7,6 +7,7 @@ import ShopProductCard from "../../Components/ShopProductCard/ShopProductCard";
 
 const ProductsList = () => {
   const [search, setSearch] = useState("");
+  //   const [productWindow , setProductWindow] =
   const productList = [
     {
       image: `${productImage}`,
