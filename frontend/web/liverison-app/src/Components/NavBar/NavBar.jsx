@@ -57,7 +57,7 @@ const NavBar = () => {
         </div>
         <div className="md:flex gap-2.5 mr-5 hidden">
           <button className="bg-green-500 text-white w-26 h-10 rounded font-bold">
-            log in
+            <NavLink to="login">log in</NavLink>
           </button>
           <button className=" border-green-500 border bg-white text-green-500 w-26 h-10 rounded font-bold">
             Register

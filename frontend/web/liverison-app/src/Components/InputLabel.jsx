@@ -22,7 +22,7 @@ const InputLabel = ({
         </p>
       </div>
 
-      <div className="relative bg-white">
+      <div className="relative">
         <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
         <input
           type={type}

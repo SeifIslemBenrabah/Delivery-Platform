@@ -48,6 +48,7 @@ const Login = () => {
       setPwd("");
       // Navigate({ to: "/shopownerhome" });
       setSuccess(true);
+      console.log(accessToken, "this is the response" + response);
     } catch (err) {
       if (!err?.response) {
         setPasswordError("No Server Response");

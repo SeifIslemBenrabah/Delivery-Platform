@@ -1,4 +1,5 @@
 import React from "react";
+
 import NavBar from "../Components/NavBar/NavBar";
 import heroImage from "../assets/img/hero_pic.png";
 import aboutUsImage from "../assets/img/Aboutus_pic.png";
@@ -285,8 +286,10 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
   );
 };
+
+
 
 export default LandingPage;

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useParams, NavLink } from "react-router";
+import { NavLink } from "react-router";
 import { TbSquareArrowLeft } from "react-icons/tb";
 import { HiLocationMarker } from "react-icons/hi";
 import { AiOutlinePlusCircle } from "react-icons/ai";
