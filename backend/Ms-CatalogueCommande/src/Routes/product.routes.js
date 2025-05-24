@@ -12,7 +12,7 @@ const {
   productstatusupdate
 } = require("../controllers/product.controller");
 
-router.post("/", upload.single("photoProduit"), addProduit);
+router.post("/", auth(),upload.single("photoProduit"), addProduit);
 
 router.get("/",  auth(),getAllProduits);
 router.get("/name",  auth(),getProduitBySearch);
