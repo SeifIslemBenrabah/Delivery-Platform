@@ -5,9 +5,9 @@ const mongoose = require("mongoose");
 
 const addProduit = async (req, res) => {
   try {
-    if (!req.user.roles.includes('COMMERCANT')) {
-      return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
-    }
+    // if (!req.user.roles.includes('COMMERCANT')) {
+    //   return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
+    // }
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded!" });
     }
@@ -25,7 +25,15 @@ const addProduit = async (req, res) => {
     });
 
     console.log("Image uploaded:", uploadResult.secure_url);
-
+    const boutique = await Boutique.findOne({ "catalogues._id": req.body.Catalogueid });
+      if (!boutique) {
+        console.log(req.body.Catalogueid );
+        return res.status(404).json({ message: `Boutique not found to add product` });
+      }
+      if(boutique._id !== req.body.Boutiqueid){
+        return res.status(400).json({ message: `catalogue must belong to the same boutique` });
+      }
+      idCommercent = boutique.idCommercant; 
     const produit = await Produit.create({
       nomProduit: req.body.nomProduit,
       price: req.body.price,
@@ -33,7 +41,9 @@ const addProduit = async (req, res) => {
       description: req.body.description,
       photoProduit: uploadResult.secure_url,
       infos: req.body.infos,
-      Catalogueid:req.body.Catalogueid
+      Catalogueid:req.body.Catalogueid,
+      idBoutique: req.body.Boutiqueid,
+      idCommercant:req.body.idCommercant
     });
 
     console.log("Product saved to MongoDB:", produit);
@@ -73,7 +83,10 @@ const productstatusupdate = async (req,res)=>{
 }
 const getAllProduits = async (req, res) => {
   try {
-    const produits = await Produit.find();
+    const produits = await Produit.find().populate({
+      path: 'idBoutique',
+      select: 'nomBoutique' // only include the boutique name
+    });
     res.status(200).json(produits);
   } catch (error) {
     console.error("Error fetching products:", error);
