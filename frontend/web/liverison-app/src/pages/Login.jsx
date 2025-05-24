@@ -1,20 +1,15 @@
-<<<<<<< HEAD
 import React, { useContext, useEffect, useRef, useState } from "react";
-=======
-import React from "react";
->>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
 import InputLabel from "../Components/InputLabel";
 import { MdOutlineMail } from "react-icons/md";
 import { FiShield } from "react-icons/fi";
 import logo from "../assets/img/VerticalLogo.png";
 import loginImg from "../assets/img/LoginImage.png";
 import loginBg from "../assets/img/loginBg.png";
-<<<<<<< HEAD
 import { Link, Navigate } from "react-router";
 import axios from "axios";
 import AuthContext from "../Context/AuthProvider";
 
-const LOGIN_URL = "http://localhost:8080/api/v1/auth/authenticate";
+const LOGIN_URL = "http://localhost:8082/api/v1/auth/authenticate";
 
 const Login = () => {
   const userRef = useRef();
@@ -30,24 +25,48 @@ const Login = () => {
     userRef.current.focus();
   }, []);
 
-  const handleChangeData = (e) => {
-    const { name, value } = e.target;
-    if (name === "email") {
-      setEmail(value);
-    } else if (name === "password") {
-      setPwd(value);
-    }
-  };
+  // const handleChangeData = (e) => {
+  //   const { name, value } = e.target;
+  //   if (name === "email") {
+  //     setEmail(value);
+  //   } else if (name === "password") {
+  //     setPwd(value);
+  //   }
+  // };
 
   const submitHandle = async () => {
     try {
-      const response = await axios.post(LOGIN_URL, JSON.stringify({}), {
-        headers: { "Content-Type": "application/json" },
-        withCredentials: true,
-      });
+      // console.log(email, pwd);
+      const response = await axios.post(
+        LOGIN_URL,
+        JSON.stringify({ email, password: pwd }),
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
       console.log(JSON.stringify(response?.data));
-
-      const accessToken = response?.data.accessToken;
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      const accessToken = response?.data.token;
+      console.log(accessToken);
+      const res = await axios.post(
+        "http://localhost:8082/api/v1/auth/verify-token",
+        {
+          token: response.data.token,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${response?.data?.token}`,
+          },
+        }
+      );
+      localStorage.setItem("token", accessToken);
+      const roles = res.data.roles;
+      const userId = response?.data?.userId;
+      console.log(roles);
+      console.log(userId);
+      // localStorage.setItem("Roles", roles);
+      // console.log(localStorage.getItem("Roles"));
       setAuth({ email, pwd, accessToken });
       setEmail("");
       setPwd("");
@@ -55,26 +74,21 @@ const Login = () => {
       setSuccess(true);
       console.log(accessToken, "this is the response" + response);
     } catch (err) {
-      if (!err?.response) {
-        setPasswordError("No Server Response");
-      } else if (err.response?.status === 400) {
-        if (email === "") {
-          setEmailError("missing email or invalid!");
-        } else if (pwd === "") {
-          setPasswordError("missing password or invalid!");
-        }
-      } else if (err.response?.status === 401) {
-        setPasswordError("informations not found!");
-      } else setPasswordError("Login Failed!");
+      // if (!err?.response) {
+      //   setPasswordError("No Server Response");
+      // } else if (err.response?.status === 400) {
+      //   if (email === "") {
+      //     setEmailError("missing email or invalid!");
+      //   } else if (pwd === "") {
+      //     setPasswordError("missing password or invalid!");
+      //   }
+      // } else if (err.response?.status === 401) {
+      //   setPasswordError("informations not found!");
+      // } else setPasswordError("Login Failed!");
+      console.log(err);
     }
   };
 
-=======
-
-import { Link } from "react-router";
-
-const Login = () => {
->>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
   return (
     <div
       className="flex h-[100vh]   justify-center items-center bg-cover bg-no-repeat bg-center "
@@ -95,47 +109,32 @@ const Login = () => {
               icon={MdOutlineMail}
               type="email"
               inputName="Email"
-<<<<<<< HEAD
               errorMassage={emailError}
               value={email}
               name="email"
-              onchange={handleChangeData}
-=======
-              errorMassage="invalid email"
->>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
+              onchange={(e) => setEmail(e.target.value)}
             />
             <InputLabel
               icon={FiShield}
               type="password"
               inputName="Password"
-<<<<<<< HEAD
               errorMassage={passwordError}
               value={pwd}
               name="password"
-              onchange={handleChangeData}
+              onchange={(e) => setPwd(e.target.value)}
               affiche={true}
-=======
-              errorMassage="invalid password"
->>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
             />
           </div>
           <div className=" w-full flex flex-col items-center mt-8">
             <input
               type="button"
               value="Login"
-<<<<<<< HEAD
               ref={userRef}
               className=" bg-green-600 text-white w-[70%] py-2 rounded hover:bg-green-500 cursor-pointer"
               onClick={() => submitHandle()}
             />
             <div className="w-[70%] flex items-start justify-start mt-2">
               <p className="">Don't have account ?</p>
-=======
-              className=" bg-green-600 text-white w-[70%] py-2 rounded hover:bg-green-500 cursor-pointer"
-            />
-            <div className="w-[70%] flex items-start justify-start mt-2">
-              <p>Don't habe account ?</p>
->>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
               <p className="ml-1.5 text-green-600 font-bold hover:text-green-500 cursor-pointer ">
                 <Link to="/registration">Registration</Link>
               </p>

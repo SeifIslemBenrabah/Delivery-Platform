@@ -1,6 +1,5 @@
 import React from "react";
 
-<<<<<<< HEAD
 import loginBg from "../assets/img/loginBg.png";
 import InputLabel from "../Components/InputLabel";
 import { FaRegUser, FaUser } from "react-icons/fa";
@@ -165,12 +164,6 @@ const Registration = () => {
           </div>
         </div>
       </div>
-=======
-const Registration = () => {
-  return (
-    <div>
-      <h1>Registration Page</h1>
->>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
     </div>
   );
 };
