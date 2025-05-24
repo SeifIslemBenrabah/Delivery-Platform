@@ -116,13 +116,13 @@ const getProduitById = async (req, res) => {
 const getProduitByIdCatalogue = async (req, res) => {
   try {
     const { boutiqueId, catalogueId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(boutiqueId)) {
+    /*if (!mongoose.Types.ObjectId.isValid(boutiqueId)) {
       return res.status(400).json({ msg: "Invalid boutique ID format." });
-    }
+    }*/
     if (!mongoose.Types.ObjectId.isValid(catalogueId)) {
       return res.status(400).json({ msg: "Invalid catalogue ID format." });
     }
-    const boutique = await Boutique.findById(new mongoose.Types.ObjectId(boutiqueId));
+    const boutique = await Boutique.findById(boutiqueId);
 
     if (!boutique) {
       return res.status(404).json({ msg: "Boutique not found." });

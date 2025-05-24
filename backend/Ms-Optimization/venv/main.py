@@ -25,7 +25,6 @@ import asyncio
 import socket
 from contextlib import asynccontextmanager
 import logging
-from jose import JWTError, jwt
 
 
 load_dotenv()
