@@ -15,10 +15,14 @@ const getCataloguesByBoutique = async (req, res) => {
 
 const addCatalogueToBoutique = async (req, res) => {
   try {
+
+    // if (!req.user.roles.includes('COMMERCANT')) {
+    //   return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
+    // }
     const { boutiqueId } = req.params;
     const { nomCatalogue, produits } = req.body; 
 
-    const boutique = await Boutique.findById(boutiqueId);
+    const boutique = await Boutique.findById( boutiqueId);
     if (!boutique) {
       return res.status(404).json({ message: "Boutique not found" });
     }
@@ -36,6 +40,9 @@ const addCatalogueToBoutique = async (req, res) => {
 
 const updateCatalogueInBoutique = async (req, res) => {
   try {
+    if (!req.user.roles.includes('COMMERCANT')) {
+      return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
+    }
     const { boutiqueId, catalogueId } = req.params;
     const { nomCatalogue, produits } = req.body;
 
@@ -61,6 +68,9 @@ const updateCatalogueInBoutique = async (req, res) => {
 
 const deleteCatalogueFromBoutique = async (req, res) => {
   try {
+    if (!req.user.roles.includes('COMMERCANT')) {
+      return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
+    }
     const { boutiqueId, catalogueId } = req.params;
 
     const boutique = await Boutique.findById(boutiqueId);

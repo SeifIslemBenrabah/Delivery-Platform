@@ -14,6 +14,11 @@ const ProduitSchema = new Schema({
     photoProduit:{type: String, required: true},
     infos: [TypeSchema] ,
     Catalogueid: { type: Schema.Types.ObjectId, ref: 'Catalogue', required: true },
+    status: {
+        type: String,
+        enum: ['accepte', 'refuse', 'en_attente'],
+        default: 'en_attente'
+    }
 });
 
 const Produit = mongoose.model("Produit", ProduitSchema);

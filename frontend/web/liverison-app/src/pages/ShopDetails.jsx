@@ -1,30 +1,50 @@
+<<<<<<< HEAD
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import Wallet from "../assets/Wallet.svg";
+=======
+import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import Wallet from '../assets/Wallet.svg';
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
 
 const ShopDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
   // Fake Client Data
   const shop = {
     id: id,
     name: "Dido Shop 34",
     email: "dido@gmail.com",
     gender: "Male",
+<<<<<<< HEAD
     registrationDate: "2023-07-15",
+=======
+    registrationDate: "2023-07-15", 
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
     age: 28,
     phoneNumber: "+213 665 45 78 90",
     address: "Algiers, Algeria",
     ownerfirstname: "Dido",
     ownerlastname: "ShopOwner",
+<<<<<<< HEAD
     image:
       "https://img.freepik.com/premium-photo/interior-brand-new-fashion-clothing-store_652667-137.jpg?w=2000",
+=======
+    image: 'https://img.freepik.com/premium-photo/interior-brand-new-fashion-clothing-store_652667-137.jpg?w=2000'
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
   };
 
   // Fake Orders Data
   const orders = [
+<<<<<<< HEAD
     {
       id: 1,
       price: "$20",
@@ -73,6 +93,14 @@ const ShopDetails = () => {
       paymenttype: "Paypal",
       date: "2024-04-15",
     },
+=======
+    { id: 1, price: "$20", items: 3, deliveryname: "John Doe", paymenttype: "Cash", date: "2024-04-01" },
+    { id: 2, price: "$35", items: 5, deliveryname: "Jane Smith", paymenttype: "Card", date: "2024-04-05" },
+    { id: 3, price: "$15", items: 2, deliveryname: "Ali Ahmed", paymenttype: "Paypal", date: "2024-04-07" },
+    { id: 4, price: "$50", items: 7, deliveryname: "Sami Kamel", paymenttype: "Cash", date: "2024-04-10" },
+    { id: 5, price: "$40", items: 6, deliveryname: "Layla Nassim", paymenttype: "Card", date: "2024-04-12" },
+    { id: 6, price: "$60", items: 8, deliveryname: "Khaled Omar", paymenttype: "Paypal", date: "2024-04-15" }
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
   ];
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -95,6 +123,7 @@ const ShopDetails = () => {
   };
 
   const handleBack = () => {
+<<<<<<< HEAD
     navigate(-1); // Navigate back to the previous page
   };
 
@@ -123,15 +152,39 @@ const ShopDetails = () => {
             <img
               src={shop.image}
               alt="userimage"
+=======
+    navigate(-1);  // Navigate back to the previous page
+  };
+
+  return (
+    <div className='w-full h-full flex flex-col gap-3 text-[16px]'>
+      <div className='bg-primary flex items-center justify-center rounded-2xl text-white'
+        onClick={() => handleBack()}>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+        </svg>
+      </div>
+      <div className='w-full flex flex-row items-stretch gap-3'>
+        <div className='bg-gradient-to-r from-[#5CF39C]/70 from-65% to-light w-8/12 flex flex-row items-center gap-6 p-6 rounded-2xl'>
+          <div className='flex flex-col items-center gap-2'>
+            <img 
+              src={shop.image} 
+              alt='userimage'
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
               className="w-40 h-40 rounded-lg object-cover mb-2"
             />
             <p className="text-lg font-semibold">{shop.name}</p>
             <p>{shop.email}</p>
+<<<<<<< HEAD
             <button className="flex flex-row items-center gap-1 bg-primary py-1 px-3 rounded-md text-white mt-2">
+=======
+            <button className='flex flex-row items-center gap-1 bg-primary py-1 px-3 rounded-md text-white mt-2'>
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
               Send Mail
             </button>
           </div>
 
+<<<<<<< HEAD
           <div className="w-0.5 h-52 bg-gray-600"></div>
 
           <div className="flex flex-grow flex-col gap-4">
@@ -141,26 +194,50 @@ const ShopDetails = () => {
                 <p className="text-lg font-semibold">{shop.ownerfirstname}</p>
               </div>
               <div className="flex flex-col items-start">
+=======
+          <div className='w-0.5 h-52 bg-gray-600'></div>
+
+          <div className='flex flex-grow flex-col gap-4'>
+            <div className='flex flex-row gap-10'>
+              <div className='flex flex-col items-start'>
+                <p>Owner First Name:</p>
+                <p className="text-lg font-semibold">{shop.ownerfirstname}</p>
+              </div>
+              <div className='flex flex-col items-start'>
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
                 <p>Last Name:</p>
                 <p className="text-lg font-semibold">{shop.ownerlastname}</p>
               </div>
             </div>
 
+<<<<<<< HEAD
             <div className="flex flex-col items-start">
+=======
+            <div className='flex flex-col items-start'>
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
               <p>Phone Number:</p>
               <p className="text-lg font-semibold">{shop.phoneNumber}</p>
             </div>
 
+<<<<<<< HEAD
             <div className="flex flex-row items-center gap-2">
+=======
+            <div className='flex flex-row items-center gap-2'>
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
               <p>Location Address:</p>
               <p className="text-lg font-semibold">{shop.address}</p>
             </div>
 
+<<<<<<< HEAD
             <div className="flex flex-col items-start">
+=======
+            <div className='flex flex-col items-start'>
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
               <p>Registration Date:</p>
               <p className="text-lg font-semibold">{shop.registrationDate}</p>
             </div>
 
+<<<<<<< HEAD
             <div className="w-full flex flex-row gap-2 justify-end pr-10">
               <button className="bg-light border-[0.4px] border-green-600 flex flex-row items-center text-green-600 gap-1 py-1 px-3 rounded-md">
                 See Files
@@ -192,23 +269,49 @@ const ShopDetails = () => {
                     strokeLinejoin="round"
                     d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
                   />
+=======
+            <div className='w-full flex flex-row gap-2 justify-end pr-10'>
+              <button className='bg-light border-[0.4px] border-green-600 flex flex-row items-center text-green-600 gap-1 py-1 px-3 rounded-md'>
+                See Files
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+              </button>
+              <button className='bg-red-600 flex flex-row items-center text-white py-1 px-3 rounded-md'>
+                Delete
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
                 </svg>
               </button>
             </div>
           </div>
         </div>
 
+<<<<<<< HEAD
         <div className="flex flex-col gap-2 flex-grow">
           <div className="flex items-center h-1/2 rounded-2xl border-1 justify-evenly border-green-400">
             <img src={Wallet} alt="Wallet" />
             <div className="flex flex-col items-center">
+=======
+        <div className='flex flex-col gap-2 flex-grow'>
+          <div className='flex items-center h-1/2 rounded-2xl border-1 justify-evenly border-green-400'>
+            <img src={Wallet} alt='Wallet'/>
+            <div className='flex flex-col items-center'>
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
               <p>Total Profit</p>
               <p>25300 DA</p>
             </div>
           </div>
+<<<<<<< HEAD
           <div className="flex items-center h-1/2 rounded-2xl border-1 justify-evenly border-green-400 px-3">
             <img src={Wallet} alt="Wallet" />
             <div className="flex flex-col items-center">
+=======
+          <div className='flex items-center h-1/2 rounded-2xl border-1 justify-evenly border-green-400 px-3'>
+            <img src={Wallet} alt='Wallet'/>
+            <div className='flex flex-col items-center'>
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
               <p>Total Profit</p>
               <p>25300 DA</p>
             </div>
@@ -216,6 +319,7 @@ const ShopDetails = () => {
         </div>
       </div>
 
+<<<<<<< HEAD
       <div className="flex flex-grow flex-col items-start px-3 pt-3 pb-5 bg-gradient-to-r from-[#5CF39C]/70 from-85% to-light rounded-2xl">
         <p className="font-semibold mb-3">Commandes History</p>
 
@@ -228,14 +332,31 @@ const ShopDetails = () => {
                 <p className="font-semibold">Order #{order.id}</p>
               </div>
               <div className="flex flex-row gap-2 items-center">
+=======
+      <div className='flex flex-grow flex-col items-start px-3 pt-3 pb-5 bg-gradient-to-r from-[#5CF39C]/70 from-85% to-light rounded-2xl'>
+        <p className="font-semibold mb-3">Commandes History</p>
+
+        <div className='w-full flex flex-col gap-2'>
+          {currentOrders.map((order) => (
+            <div key={order.id} className='w-full bg-white flex flex-row justify-between items-center p-3 text-[12px] rounded-lg shadow-sm'>
+              <div>
+                <p className="font-semibold">Order #{order.id}</p>
+              </div>
+              <div className='flex flex-row gap-2 items-center'>
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
                 <p className="text-gray-700">{order.price}</p>
                 <span>|</span>
                 <p className="text-gray-700">{order.items} items</p>
               </div>
+<<<<<<< HEAD
               <div className="flex flex-row gap-2 items-center">
                 <p className="text-gray-700 ">
                   Delivering By: {order.deliveryname}
                 </p>
+=======
+              <div className='flex flex-row gap-2 items-center'>
+                <p className="text-gray-700 ">Delivering By: {order.deliveryname}</p>
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
                 <p className="text-gray-500 ">Payment: {order.paymenttype}</p>
               </div>
               <div>
@@ -245,6 +366,7 @@ const ShopDetails = () => {
           ))}
         </div>
 
+<<<<<<< HEAD
         <div className="w-full flex justify-end gap-2 mt-4">
           <button
             onClick={prevPage}
@@ -281,6 +403,26 @@ const ShopDetails = () => {
                 strokeLinejoin="round"
                 d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
               />
+=======
+        <div className='w-full flex justify-end gap-2 mt-4'>
+          <button 
+            onClick={prevPage} 
+            className='bg-primary text-white py-1 px-4 rounded-md disabled:bg-gray-400'
+            disabled={currentPage === 1}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+            </svg>
+          </button>
+
+          <button 
+            onClick={nextPage} 
+            className='bg-primary text-white py-1 px-4 rounded-md disabled:bg-gray-400'
+            disabled={indexOfLastOrder >= orders.length}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
             </svg>
           </button>
         </div>

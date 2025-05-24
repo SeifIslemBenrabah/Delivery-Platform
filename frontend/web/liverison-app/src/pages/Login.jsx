@@ -1,10 +1,15 @@
+<<<<<<< HEAD
 import React, { useContext, useEffect, useRef, useState } from "react";
+=======
+import React from "react";
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
 import InputLabel from "../Components/InputLabel";
 import { MdOutlineMail } from "react-icons/md";
 import { FiShield } from "react-icons/fi";
 import logo from "../assets/img/VerticalLogo.png";
 import loginImg from "../assets/img/LoginImage.png";
 import loginBg from "../assets/img/loginBg.png";
+<<<<<<< HEAD
 import { Link, Navigate } from "react-router";
 import axios from "axios";
 import AuthContext from "../Context/AuthProvider";
@@ -64,6 +69,12 @@ const Login = () => {
     }
   };
 
+=======
+
+import { Link } from "react-router";
+
+const Login = () => {
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
   return (
     <div
       className="flex h-[100vh]   justify-center items-center bg-cover bg-no-repeat bg-center "
@@ -84,32 +95,47 @@ const Login = () => {
               icon={MdOutlineMail}
               type="email"
               inputName="Email"
+<<<<<<< HEAD
               errorMassage={emailError}
               value={email}
               name="email"
               onchange={handleChangeData}
+=======
+              errorMassage="invalid email"
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
             />
             <InputLabel
               icon={FiShield}
               type="password"
               inputName="Password"
+<<<<<<< HEAD
               errorMassage={passwordError}
               value={pwd}
               name="password"
               onchange={handleChangeData}
               affiche={true}
+=======
+              errorMassage="invalid password"
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
             />
           </div>
           <div className=" w-full flex flex-col items-center mt-8">
             <input
               type="button"
               value="Login"
+<<<<<<< HEAD
               ref={userRef}
               className=" bg-green-600 text-white w-[70%] py-2 rounded hover:bg-green-500 cursor-pointer"
               onClick={() => submitHandle()}
             />
             <div className="w-[70%] flex items-start justify-start mt-2">
               <p className="">Don't have account ?</p>
+=======
+              className=" bg-green-600 text-white w-[70%] py-2 rounded hover:bg-green-500 cursor-pointer"
+            />
+            <div className="w-[70%] flex items-start justify-start mt-2">
+              <p>Don't habe account ?</p>
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
               <p className="ml-1.5 text-green-600 font-bold hover:text-green-500 cursor-pointer ">
                 <Link to="/registration">Registration</Link>
               </p>

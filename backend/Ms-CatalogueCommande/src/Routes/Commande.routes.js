@@ -1,22 +1,31 @@
 const express = require("express");
 const router = express.Router();
+const auth = require('../middlewares/auth');
 const {
   createCommande,
   getAllCommandes,
   getCommandeById,
   updateCommandeStatus,
   deleteCommande,
+  getCommandeByClientId 
 } = require("../controllers/Commande.controller");
 
-router.post("/", createCommande);
+// Create a new commande
+router.post("/", auth(), createCommande);
 
-router.get("/", getAllCommandes);
+// Get all commandes (possibly with filters)
+router.get("/", auth(), getAllCommandes);
 
+// Get commandes by client ID (added as a query parameter route)
+router.get("/client/:clientId", auth(), getCommandeByClientId);
 
-router.get("/:commandeId", getCommandeById);
+// Get a specific commande by ID
+router.get("/:commandeId", auth(), getCommandeById);
 
-router.put("/:commandeId/status", updateCommandeStatus);
+// Update commande status
+router.put("/:commandeId/status", auth(), updateCommandeStatus);
 
-router.delete("/:commandeId", deleteCommande);
+// Delete a commande
+router.delete("/:commandeId", auth(), deleteCommande);
 
 module.exports = router;

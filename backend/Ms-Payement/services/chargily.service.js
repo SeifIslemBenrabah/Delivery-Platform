@@ -13,19 +13,26 @@ const createProduct= async(productData)=>{
 
 
 const createPrice = async(priceData)=>{
-    const newPrice = await client.createPrice(priceData);
-    return newPrice.id
+    console.log(priceData)
+    const newPrice = await client.createPrice({
+      amount: priceData.amount > 100 ? priceData.amount : 100,
+      currency: 'dzd',
+      product_id: priceData.idProduit,
+      
+    });
+   return newPrice.id
 }
 
 const createCheckout = async(items,payment_method)=>{
+   console.log(items)
     const checkout = await client.createCheckout({
         items,
-        success_url: 'https://your-website.com/success',
-        failure_url: 'https://your-website.com/failure',
-        payment_method, 
+        success_url: `http://localhost:${process.env.PORT}/success`,
+        failure_url:`http://localhost:${process.env.PORT}/failure`,
+        
         collect_shipping_address: true,
       });
-      return checkout.checkout_url
+      return {checkout_url:checkout.checkout_url,id:checkout.id}
 }
 
 module.exports={createProduct,createCheckout,createPrice}

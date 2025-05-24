@@ -1,4 +1,7 @@
 const Commande = require("../models/Commande");
+const Produit = require('../models/Produit');
+const {Boutique} = require("../models/Boutique");
+require("dotenv").config();
 const mongoose = require("mongoose");
 const axios = require('axios');
 async function getUserDetails(userId) {
@@ -13,7 +16,9 @@ async function getUserDetails(userId) {
 const createCommande = async (req, res) => {
   try {
     let { PickUpAddress, DropOffAddress, Livraisontype, idClient, produits } = req.body;
+    let { PickUpAddress, DropOffAddress, Livraisontype, idClient, produits } = req.body;
 
+    if (!DropOffAddress || !Livraisontype || !idClient || !produits) {
     if (!DropOffAddress || !Livraisontype || !idClient || !produits) {
       return res.status(400).json({ message: "Missing required fields!" });
     }
@@ -44,12 +49,32 @@ const createCommande = async (req, res) => {
       Livraisontype,
       idClient,
       produits: formattedProduits,
+      idBoutique: expectedBoutiqueId,
+      idCommercant
     });
+
 
     await newCommande.save();
 
+    const instances = client.getInstancesByAppId('MS-GATEWAY');
+    if (!instances || instances.length === 0) {
+      return res.status(503).json({ message: "cart-api not available" });
+    }
+
+    const { hostName, port } = instances[0];
+    const port2 = port['$'];
+    const cartApiUrl=`http://localhost:8020/new_order`; //`http://${hostName}:${port2}/service-optimization/new_order`;
+
+    await axios.post(cartApiUrl, {
+      idCommande: newCommande.id,
+      depart: [PickUpAddress.latitude, PickUpAddress.longitude],
+      arrivee: [DropOffAddress.latitude, DropOffAddress.longitude]
+    });
+
     res.status(201).json({ message: "Commande created successfully!", commande: newCommande });
+
   } catch (error) {
+    console.error("Error creating Commande:", error);
     console.error("Error creating Commande:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -79,7 +104,29 @@ const getCommandeById = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
+const getCommandeByClientId = async (req,res)=>{
+  const { clientId } = req.params;
+  try{
+    if (!clientId) {
+      return res.status(400).json({
+          success: false,
+          message: "Client ID is required"
+      });
+  }
+  const commandes = await Commande.find({ idClient: clientId }).sort({ date: -1 });
+  res.status(200).json({
+    success: true,
+    data: commandes
+});
+  }catch(error){
+    console.error('Error fetching client commands:', error);
+    res.status(500).json({
+        success: false,
+        message: "Server error while fetching commands",
+        error: error.message
+    });
+  }
+}
 const updateCommandeStatus = async (req, res) => {
   try {
     const { commandeId } = req.params;
@@ -126,4 +173,5 @@ module.exports = {
   getCommandeById,
   updateCommandeStatus,
   deleteCommande,
+  getCommandeByClientId
 };

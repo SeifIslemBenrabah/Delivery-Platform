@@ -7,10 +7,16 @@ const Paiement = sequelize.define('Paiement', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
+    autoIncrement:true
   },
   checkout_url: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
+    unique:true
+  },
+  checkout_id: {
+    type: DataTypes.STRING,
+    allowNull: true,
     unique:true
   },
   prix_total: {
@@ -30,7 +36,7 @@ const Paiement = sequelize.define('Paiement', {
     defaultValue:0
   },
   id_livreur: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.STRING,
     references: {
         model: Livreur,
         key: 'id'
@@ -42,6 +48,10 @@ const Paiement = sequelize.define('Paiement', {
         model: Commercent,
         key: 'id'
     },
+  },
+  status: {
+    type: DataTypes.STRING,
+    defaultValue:"pending"
   },
 }, {
   timestamps: true, // Ajoute createdAt et updatedAt automatiquement

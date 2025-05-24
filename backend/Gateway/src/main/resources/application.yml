@@ -1,0 +1,68 @@
+server:
+  port: 7777
+
+spring:
+  application:
+    name: ms-gateway
+
+  cloud:
+    gateway:
+      routes:
+        - id: route1
+          predicates:
+            - Path=/service-optimization/**
+          filters:
+            - RewritePath=/service-optimization/(?<s>.*), /${s}
+          uri: lb://ms-optimization
+        - id: route2
+          predicates:
+            - Path=/service-payement/**
+          filters:
+            - RewritePath=/service-payement/(?<s>.*), /${s}
+          uri: lb://ms-payement
+        - id: route3
+          predicates:
+            - Path=/service-commande/**
+          filters:
+            - RewritePath=/service-commande/(?<s>.*), /${s}
+          uri: lb://ms-commande
+
+        - id: route4
+          predicates:
+            - Path=/service-user/**
+          filters:
+            - RewritePath=/service-user/(?<s>.*), /${s}
+          uri: lb://ms-user  
+        # REST route
+        - id: route-suivi-rest
+          predicates:
+            - Path=/service-suivi/api/**
+          filters:
+            - RewritePath=/service-suivi/api/(?<s>.*), /${s}
+          uri: lb://ms-suivi
+
+          # WebSocket route
+        - id: route-suivi-ws
+          predicates:
+            - Path=/service-suivi/ws/**
+          filters:
+            - RewritePath=/service-suivi/ws/(?<s>.*), /${s}
+          uri: lb:ws://ms-suivi
+
+
+eureka:
+  instance:
+    prefer-ip-address: true
+    ip-address: ${spring.cloud.client.ip-address}  
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    serviceUrl:
+      defaultZone: http://localhost:8888/eureka/
+
+logging:
+  level:
+    org:
+      springframework:
+        cloud:
+          gateway: TRACE

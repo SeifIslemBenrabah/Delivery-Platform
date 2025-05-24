@@ -73,6 +73,15 @@ const deleteLivreur = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+const notifLivreur = async (req,res)=>{
+    try{
+        const { idLivreur , idCommande } = req.body;
+        
+    }
+    catch(error){
+
+    }
+}
 
 module.exports = {
     addLivreur,

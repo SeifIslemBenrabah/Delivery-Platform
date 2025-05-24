@@ -1,8 +1,12 @@
-from http.client import HTTPException
-from fastapi import FastAPI,Request # type: ignore
+from fastapi import FastAPI,Request,HTTPException,status # type: ignore
 import random
+import sys
+from starlette.requests import Request
+from starlette.datastructures import Headers
+from fastapi.responses import JSONResponse
 import requests # type: ignore
 import networkx as nx # type: ignore
+import py_eureka_client.eureka_client as eureka_client
 import math
 import numpy as np # type: ignore
 import networkx as nx # type: ignore
@@ -11,17 +15,124 @@ import folium # type: ignore
 from IPython.display import display, IFrame # type: ignore
 from itertools import permutations
 import os
+from dotenv import load_dotenv
 from geopy.distance import geodesic # type: ignore
 from itertools import permutations
 from pydantic import BaseModel
 from typing import List
 from motor.motor_asyncio import AsyncIOMotorClient
 import asyncio
+import socket
+from contextlib import asynccontextmanager
+import logging
 
-MONGO_URI = "mongodb://localhost:27017"
+
+load_dotenv()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+def verify_token(token: str):
+    instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
+    if not instances:
+            return JSONResponse(
+                status_code=503,
+                content={"message": "MS-GATEWAY service unavailable"}
+            )
+        
+    instance = instances[0]
+    url_user=f"http://{instance.hostName}:{instance.port.port}/service-user/api/v1/auth/verify-token"
+    print(token)
+    post_data = {
+        "token": token
+      }
+    headers = {
+          "Authorization": f"Bearer {token}"
+    }
+    print(url_user)
+    response = requests.post(url_user, json=post_data, headers=headers,allow_redirects=False)
+    print(response.text)
+    if response.status_code == 200:
+      data = response.json()
+      return data["roles"]
+    else: return False  
+    
+
+# 📌 Fonction de rappel en cas d'erreur
+def on_err(err_type: str, err: Exception):
+    if err_type in (eureka_client.ERROR_REGISTER, eureka_client.ERROR_DISCOVER):
+        eureka_client.stop()
+    else:
+        print(f"{err_type}::{err}")
+
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 client = AsyncIOMotorClient(MONGO_URI)
 db = client["Optimization"]
 collection = db["livreurs"]
+
+def get_local_ip():
+    try:
+        hostname = socket.gethostname()
+        return socket.gethostbyname(hostname)
+    except Exception as e:
+        print("❌ Erreur lors de la récupération de l'IP :", e)
+        return "127.0.0.1"
+def get_instance_port():
+    # Chercher un argument --port dans sys.argv
+    return os.getenv("PORT", 8020)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("🚀 Début du lifespan FastAPI")
+    ip = get_local_ip()
+    try:
+        # Assurer l'appel de la méthode asynchrone correctement avec await
+        await eureka_client.init_async(
+            eureka_server=os.getenv("EUREKA_SERVER", "http://127.0.0.1:8888/eureka"),  # Ton serveur Eureka
+            app_name="ms-optimization",                          # Nom du service
+            instance_port=get_instance_port(),
+            instance_ip=ip,
+            health_check_url=f"http://{ip}:8020/health",
+            status_page_url=f"http://{ip}:8020/info",
+            home_page_url=f"http://{ip}:8020/",
+            on_error=on_err
+        )
+        print("📡 Enregistré dans Eureka comme 'cart-api'")
+    except Exception as e:
+        print("❌ Erreur lors de l'enregistrement Eureka :", e)
+
+    yield
+    # ✅ Attente propre de la méthode async sans bloquer la boucle FastAPI
+    '''
+    try:
+        if hasattr(eureka_client, "stop_async"):
+            await eureka_client.stop_async()
+            print("🔌 Désenregistré proprement de Eureka (stop_async)")
+        elif hasattr(eureka_client, "stop"):
+            eureka_client.stop()
+            print("🔌 Désenregistré proprement de Eureka (stop)")
+        else:
+            print("❓ Aucune méthode de désinscription trouvée dans eureka_client")
+    except Exception as e:
+        print("⚠️ Erreur lors de la désinscription de Eureka :", e)
+'''
+    print("🛑 Fin du lifespan FastAPI")
+
+app = FastAPI(lifespan=lifespan)
+
+@app.get("/")
+async def root():
+    return {"message": "Hello from FastAPI + Eureka!"}
+
+@app.get("/health")
+async def health():
+    return {"status": "UP"}
+
+@app.get("/info")
+async def info():
+    return {"app": "FastAPI Eureka Demo"}
+
 
 async def test_connection():
     try:
@@ -55,7 +166,8 @@ async def getliv(livreur_id: int):
     new_livreur = {
         "id": livreur_id,
         "commandes": [],
-        "trajet": []
+        "trajet": [],
+        "blackList":[]
     }
     
     await collection.insert_one(new_livreur)
@@ -77,8 +189,6 @@ livreurs=[
             "location":(35.18370280260782, -0.6468599346781924),
         }
     ]
-
-app = FastAPI()
 
 def get_livreur_by_id(id, clusters):
     return next((c for c in clusters if c["idLivreur"] == id), None)
@@ -133,7 +243,7 @@ def predict(nouvelle_commande, clu):
     n_arrive = np.array(nouvelle_commande["arrivee"])
 
     distances = distance_moy_cmd(clu, n_depart, n_arrive)
-
+    print(distances)
     max_distance = np.max(distances)
     #max_distance_liv = np.max(dist_liv)
     #print(max_distance_liv)
@@ -299,22 +409,85 @@ async def update_liv(livreur):
 
     await collection.update_one(query_filter, update_operation)
 
+async def add_commande_liv(livreur,commande):
+    query_filter = {"id": livreur}
+
+    # 🔹 Extraire seulement les ID des commandes
+
+    update_operation = {
+        "$push": {
+            "commandes": commande  # ✅ Ajouter un ID à la liste
+        }
+    }
+
+    await collection.update_one(query_filter, update_operation)
+
+async def add_black_list(livreur,commande):
+    query_filter = {"id": livreur}
+
+    # 🔹 Extraire seulement les ID des commandes
+
+    update_operation = {
+        "$push": {
+            "blackList": commande  # ✅ Ajouter un ID à la liste
+        }
+    }
+
+    await collection.update_one(query_filter, update_operation)    
+
+async def delete_commande_liv(livreur,commande):
+    query_filter = {"id": livreur}
+
+    # 🔹 Extraire seulement les ID des commandes
+
+    update_operation = {
+        "$pull": {
+            "commandes": commande  # ✅ Ajouter un ID à la liste
+        }
+    }
+
+    await collection.update_one(query_filter, update_operation)
 
 
 @app.post("/new_order")
 async def add_order(request:Request):
-    url_cmd="http://localhost:5000/commandes"
-    url_livreur="http://localhost:5010/livreursLocations"
-    response = requests.get(url_cmd)
+    '''
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
 
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
+
+    token = auth_header[len("Bearer "):]  # Supprime le préfixe "Bearer "
+    roles=verify_token(token)
+    if roles == False:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    '''
+    instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
+    if not instances:
+            return JSONResponse(
+                status_code=503,
+                content={"message": "MS-GATEWAY service unavailable"}
+            )
+        
+    instance = instances[0]
+    print(1)
+    url_cmd=f"http://{instance.hostName}:{instance.port.port}/service-commande/commandes"
+    url_livreur=f"http://{instance.hostName}:{instance.port.port}/service-suivi/api/livreursLocations"
+    response = requests.get(url_cmd)
+    print(url_cmd)
+    print(response)
     if response.status_code == 200:
       all_commandes = response.json()
+      print(all_commandes)
       r=requests.get(url_livreur)
       print(r)
       
       all_livreurs=r.json()['data']
       print(all_livreurs)
-      
+      if(not all_livreurs):
+          return "no liv"
       
       clusters=await generate_data(all_commandes["commandes"],all_livreurs)
       print(clusters)
@@ -327,21 +500,213 @@ async def add_order(request:Request):
       
       clusters[i]["Commandes"].append(order)
      # generate_map(clusters)
-      best_route(clusters[i])
-      await update_liv(clusters[i])
+      trajet=best_route(clusters[i])
+      #await update_liv(clusters[i])
+      print(trajet)
+
+      post_url = "http://localhost:5010/livreur/route"  # Replace "url.com" with your actual URL
+      post_data = {
+        "trajet": trajet,
+        "livreurId": clusters[i]["idlivreur"],
+        "command":order["idCommande"]
+      }
+    
+      try:
+        post_response = requests.post(post_url, json=post_data)
+        print(f"POST to {post_url} response: {post_response.status_code} - {post_response.text}")
+      except Exception as e:
+        print(f"Failed to send POST request: {e}")
+      return {"trajet": trajet, "livreur": clusters[i]["idlivreur"]}
       
+@app.post("/accept")
+async def accept(request:Request):
+     # generate_map(clusters)
+     '''
+     auth_header = request.headers.get("Authorization")
+     if not auth_header:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
+
+     if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
+
+     token = auth_header[len("Bearer "):]  # Supprime le préfixe "Bearer "
+     roles=verify_token(token)
+     if roles == False:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+     if "LIVREUR" not in roles:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+     '''
+     instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
+     if not instances:
+            return JSONResponse(
+                status_code=503,
+                content={"message": "MS-GATEWAY service unavailable"}
+            )
+        
+     instance = instances[0]
+     data=await request.json()
+     print(data)
+     livreur=data['livreur']
+     print(livreur)
+     commande=data['commande']
+     await add_commande_liv(livreur["livreurId"],commande)
+     url_cmd=f"http://{instance.hostName}:{instance.port.port}/service-commande/commandes"
+     response = requests.get(url_cmd)
+     print(url_cmd)
+     if response.status_code == 200:
+       all_commandes = response.json()
+       clusters=await generate_data(commandes=all_commandes["commandes"],livreurs=[livreur])
+       print(clusters)
+       trajet=best_route(clusters[0])
+       await update_liv(clusters[0])   
+       post_url = "http://localhost:5010/livreur/route"  # Replace "url.com" with your actual URL
+       post_data = {
+        "trajet": trajet,
+        "livreurId": clusters[0]["idlivreur"],
+        "command":commande
+       }
+    
+       try:
+        post_response = requests.post(post_url, json=post_data)
+        print(f"POST to {post_url} response: {post_response.status_code} - {post_response.text}")
+       except Exception as e:
+        print(f"Failed to send POST request: {e}")
+       return {"trajet": trajet, "livreur": livreur["livreurId"]}
       
+@app.post("/finish")
+async def finish(request:Request):
+     # generate_map(clusters)
+     auth_header = request.headers.get("Authorization")
+     if not auth_header:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
+
+     if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
+
+     token = auth_header[len("Bearer "):]  # Supprime le préfixe "Bearer "
+     roles=verify_token(token)
+     if roles == False:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+     if "LIVREUR" not in roles:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+
+     instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
+     if not instances:
+            return JSONResponse(
+                status_code=503,
+                content={"message": "MS-GATEWAY service unavailable"}
+            )
+        
+     instance = instances[0]
+     data=await request.json()
+     print(data)
+     livreur=data['livreur']
+     print(livreur)
+     commande=data['commande']
+     await delete_commande_liv(livreur['livreurId'],commande)
+     url_cmd=f"http://{instance.hostName}:{instance.port.port}/service-commande/commandes"
+     response = requests.get(url_cmd)
+     print(url_cmd)
+     print(response)
+     if response.status_code == 200:
+       all_commandes = response.json()
+       print(all_commandes)
+       clusters=await generate_data(commandes=all_commandes["commandes"],livreurs=[livreur])
+       trajet=best_route(clusters[0])
+       print("hi") 
+       await update_liv(clusters[0])        
+       print(trajet) 
+       return {"trajet": trajet, "livreur": livreur['livreurId']}
       
+@app.post("/refuse")
+async def refuse(request:Request):
+     # generate_map(clusters)
+     auth_header = request.headers.get("Authorization")
+     if not auth_header:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
+
+     if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
+
+     token = auth_header[len("Bearer "):]  # Supprime le préfixe "Bearer "
+     roles=verify_token(token)
+     if roles == False:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+     if "LIVREUR" not in roles:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+     
+     instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
+     if not instances:
+            return JSONResponse(
+                status_code=503,
+                content={"message": "MS-GATEWAY service unavailable"}
+            )
+        
+     instance = instances[0]
+     
+     data=await request.json()
+     print(data)
+     livreur=data['livreur']
+     print(livreur)
+     commande=data['commande']
+     url_cmd=f"http://{instance.hostName}:{instance.port.port}/service-commande/commandes/{commande}"
+     await add_black_list(livreur['livreurId'],commande)
+     response = requests.get(url_cmd)
+     print(url_cmd)
+     print(response)
+     if response.status_code == 200:
+      commande = response.json()
+      cmd=commande['commande']
+
+      fake_request = Request(
+          scope={
+              "type": "http",
+              "method": "POST",
+              "headers": Headers({}).raw,
+          },
+          receive=lambda: None,
+      )
+      fake_request._body = {
+          "idCommande": cmd["_id"],
+          "depart": (cmd["PickUpAddress"]["longitude"], cmd["PickUpAddress"]["latitude"]),
+          "arrivee": (cmd["DropOffAddress"]["longitude"], cmd["DropOffAddress"]["latitude"]),
+      }
+      return await add_order(fake_request)
+     
       
 
 @app.get("/route/{id}")
-async def get_route(id: int):
-    await getliv(99)
+async def get_route(id, request: Request):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
+
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
+
+    token = auth_header[len("Bearer "):]  # Supprime le préfixe "Bearer "
+    roles=verify_token(token)
+    if roles == False:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    
     livreur = await collection.find_one({"id": id})
     print(livreur)
     if livreur is None:
-        raise HTTPException(status_code=404, detail="Livreur non trouvé")
+        return {"trajet": [],"commandes":[]}
     return {"trajet": livreur["trajet"],"commandes":livreur["commandes"]}
+
+async def get_commande_liv(id):
+    livreur = await collection.find_one({"commandes": id})
+    return livreur["id"] if livreur else None
+
+@app.get("/getCommandeLiv/{id}")
+async def get_route(id):
+    livreur = await get_commande_liv(id)
+    print(livreur)
+    if livreur is None:
+        return {"erreur": "noLiv"}
+    return {"livreur":livreur}    
     
 
 @app.get("/")
@@ -444,20 +809,20 @@ livreurs [
         }
     ]
 '''
-async def generate_data(commandes, livreurs):
+async def generate_data(commandes, livreurs,commandes_encours=None):
     clu = []
     
     for liv in livreurs:
-       
-        livdb = await getliv(liv["livreurId"])  # Fetch livreur details
         
+        livdb = await getliv(liv["livreurId"])  # Fetch livreur details
+        if commandes_encours in livdb['blackList'] and commandes_encours: continue
         # Ensure livdb.commandes is a set for faster lookup
         liv_commandes = set(livdb["commandes"]) if livdb["commandes"] else set()
 
 
         temp = {
-            "idlivreur": int(liv["livreurId"]),
-            "position": (liv["location"]['latitude'],liv["location"]['longitude']),
+            "idlivreur": liv["livreurId"],
+            "position": liv["location"],
             "Commandes": [],
             "trajet": livdb["trajet"] if "trajet" in livdb else []
         }
@@ -484,4 +849,33 @@ def generate_table(commandes):
     return [cmd.idCommande for cmd in commandes]
     
 
-       
+
+
+    
+
+
+@app.get("/call-user-service")
+async def call_user_service():
+    try:
+        # Get all registered apps for debugging
+        apps = eureka_client.get_client().applications.applications
+        print("Available services:", [app.name for app in apps])
+        
+        instances = eureka_client.get_client().applications.get_application("MS-GATEWAY").instances
+        if not instances:
+            return JSONResponse(
+                status_code=503,
+                content={"message": "MS-GATEWAY service unavailable"}
+            )
+        
+        instance = instances[0]
+        url = f"http://{instance.hostName}:{instance.port.port}/service-payement/info"
+        
+        response = requests.get(url, timeout=5)
+        return response.json()
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"message": str(e)}
+        )

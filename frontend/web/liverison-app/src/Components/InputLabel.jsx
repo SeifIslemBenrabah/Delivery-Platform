@@ -1,22 +1,13 @@
 import React from "react";
 
-const InputLabel = ({
-  icon: Icon,
-  type,
-  inputName,
-  errorMassage,
-  value,
-  onchange,
-  name,
-  affiche,
-}) => {
+const InputLabel = ({ icon: Icon, type, inputName, errorMassage }) => {
   return (
     <div className="flex-col gap-2 mb-6 w-[70%]">
       <div className="flex justify-between mb-1">
         <p className="text-gray-500">{inputName}</p>
         <p
           className={`${
-            type == "password" && affiche === true ? "inline" : "hidden"
+            type == "password" ? "inline" : "hidden"
           } text-green-500 underline decoration-1 cursor-pointer hover:text-green-800`}>
           Forget Password?
         </p>
@@ -28,12 +19,9 @@ const InputLabel = ({
           type={type}
           placeholder={inputName}
           className="pl-10 py-2 border rounded-md w-full"
-          value={value}
-          onChange={onchange}
-          name={name}
         />
       </div>
-      <p className="text-left w-full text-red-500 ">{errorMassage}</p>
+      <p className="text-left w-full text-red-500 hidden">{errorMassage}</p>
     </div>
   );
 };

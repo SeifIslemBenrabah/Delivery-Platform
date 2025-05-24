@@ -1,5 +1,6 @@
 import React from "react";
 
+<<<<<<< HEAD
 import NavBar from "../Components/NavBar/NavBar";
 import heroImage from "../assets/img/hero_pic.png";
 import aboutUsImage from "../assets/img/Aboutus_pic.png";
@@ -292,4 +293,14 @@ const LandingPage = () => {
 
 
 
+=======
+const LandingPage = () => {
+  return (
+    <div>
+      <h1>Landing Page</h1>
+    </div>
+  );
+};
+
+>>>>>>> 6d523dfe4cd48b84b95f8a6161596c7130d1a271
 export default LandingPage;

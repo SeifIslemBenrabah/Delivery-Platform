@@ -1,0 +1,13 @@
+services:
+  mongodb-ms-suivi:
+    image: mongo:6.0
+    container_name: mongo-ms-suivi
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: suivi123
+      MONGO_INITDB_DATABASE: suivi_db
+    volumes:
+      - ./data/mongodb:/data/db
+    ports:
+      - 27018:27017
+    restart: unless-stopped
