@@ -116,17 +116,13 @@ const getProduitById = async (req, res) => {
 const getProduitByIdCatalogue = async (req, res) => {
   try {
     const { boutiqueId, catalogueId } = req.params;
-<<<<<<< HEAD
-    /*if (!mongoose.Types.ObjectId.isValid(boutiqueId)) {
+    if (!mongoose.Types.ObjectId.isValid(boutiqueId)) {
       return res.status(400).json({ msg: "Invalid boutique ID format." });
-    }*/
+    }
     if (!mongoose.Types.ObjectId.isValid(catalogueId)) {
       return res.status(400).json({ msg: "Invalid catalogue ID format." });
     }
-=======
-
->>>>>>> c1081daceeb1ca3adf6567f02feebb4b82637b4d
-    const boutique = await Boutique.findById(boutiqueId);
+    const boutique = await Boutique.findById(new mongoose.Types.ObjectId(boutiqueId));
 
     if (!boutique) {
       return res.status(404).json({ msg: "Boutique not found." });
@@ -136,7 +132,7 @@ const getProduitByIdCatalogue = async (req, res) => {
     if (!catalogue) {
       return res.status(404).json({ msg: "Catalogue not found." });
     }
-    const produits = await Produit.find({ Catalogueid:  catalogueId});
+    const produits = await Produit.find({ catalogueId });
 
     if (produits.length === 0) {
       return res.status(200).json({ message: "No products found in this catalog." });
