@@ -131,7 +131,9 @@ const getProduitByIdCatalogue = async (req, res) => {
     const { boutiqueId, catalogueId } = req.params;
 
 
+
     const boutique = await Boutique.findById(boutiqueId);
+
 
     if (!boutique) {
       return res.status(404).json({ msg: "Boutique not found." });
@@ -141,7 +143,7 @@ const getProduitByIdCatalogue = async (req, res) => {
     if (!catalogue) {
       return res.status(404).json({ msg: "Catalogue not found." });
     }
-    const produits = await Produit.find({ Catalogueid:  catalogueId});
+    const produits = await Produit.find({ catalogueId });
 
     if (produits.length === 0) {
       return res.status(200).json({ message: "No products found in this catalog." });
@@ -204,7 +206,6 @@ const updateProduit = async (req, res) => {
 
 const deleteProduit = async (req, res) => {
   try {
-
     const produit = await Produit.findByIdAndDelete(req.params.id);
     if (!produit) {
       return res.status(404).json({ message: "Product not found!" });
