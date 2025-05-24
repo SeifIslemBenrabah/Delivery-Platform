@@ -18,8 +18,10 @@ const ProduitSchema = new Schema({
         type: String,
         enum: ['accepte', 'refuse', 'en_attente'],
         default: 'en_attente'
-    }
-});
+    },
+    idBoutique: { type: String, ref: "Boutique", required: true },
+    idCommercant: { type: String, ref: "Boutique",required: true }
+}, { timestamps: true });
 
 const Produit = mongoose.model("Produit", ProduitSchema);
 module.exports = Produit;

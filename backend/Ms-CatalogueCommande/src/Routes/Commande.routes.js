@@ -7,7 +7,8 @@ const {
   getCommandeById,
   updateCommandeStatus,
   deleteCommande,
-  getCommandeByClientId 
+  getCommandeByClientId,
+  getCommandeByBoutiqueId
 } = require("../controllers/Commande.controller");
 
 // Create a new commande
@@ -18,6 +19,7 @@ router.get("/", auth(), getAllCommandes);
 
 // Get commandes by client ID (added as a query parameter route)
 router.get("/client/:clientId", auth(), getCommandeByClientId);
+router.get("/boutique/:boutiqueId",auth(),getCommandeByBoutiqueId)
 
 // Get a specific commande by ID
 router.get("/:commandeId", auth(), getCommandeById);

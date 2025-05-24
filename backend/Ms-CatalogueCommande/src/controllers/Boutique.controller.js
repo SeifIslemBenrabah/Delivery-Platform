@@ -83,7 +83,28 @@ const getAllBoutiques = async (req, res) => {
       if (!boutique) {
         return res.status(404).json({ message: "Boutique not found" });
       }
-      res.status(200).json(boutique);
+      const token = req.headers['authorization'];
+      if (!token) {
+        return res.status(401).json({ message: "Authorization token missing" });
+      }
+  
+      const url = `http://localhost:8082/users/${boutique.idCommercant}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': token,
+        },
+      });
+      if (!response.ok) {
+        return res.status(response.status).json({ message: "Failed to fetch user info" });
+      }
+  
+      const user = await response.json();
+
+      return res.status(200).json({boutique,
+      firstName: user.firstName,
+      lastName: user.lastName});
+
     } catch (error) {
       console.error(" Error:", error);
       res.status(500).json({ message: "Server error", error });
