@@ -30,6 +30,7 @@ function auth() {
       const data = await response.json();
 
       req.user = {
+        token: token,
         username: data.username,
         roles: data.roles,
       };

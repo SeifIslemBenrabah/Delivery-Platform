@@ -1,5 +1,6 @@
 package com.example.demo.auth;
 
+import com.example.demo.Repo.UserRepo;
 import com.example.demo.config.JwtService;
 import lombok.RequiredArgsConstructor;
 import net.minidev.json.JSONArray;
@@ -9,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import com.example.demo.Entity.*;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,6 +21,7 @@ import java.util.Set;
 public class AuthenticationController {
     private final AuthenticationService service;
     private final JwtService jwtService;
+    private  final UserRepo userRepo;
     
 
     @PostMapping("/register")
@@ -35,16 +38,26 @@ public class AuthenticationController {
     public ResponseEntity<String> upgradeToLivreur(
             @PathVariable Long userId,
             @RequestBody LivreurRequest livreurRequest) {
-        service.upgradeToLivreur(userId, livreurRequest);
-        return ResponseEntity.ok("User upgraded to Livreur successfully");
+        try {
+            service.upgradeToLivreur(userId, livreurRequest);
+            return ResponseEntity.ok("User upgraded to Livreur successfully");
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PostMapping("/upgrade-to-commercant/{userId}")
     public ResponseEntity<String> upgradeToCommercant(
             @PathVariable Long userId,
             @RequestBody CommercantRequest commercantRequest) {
-        service.upgradeToCommercant(userId, commercantRequest);
-        return ResponseEntity.ok("User upgraded to Commerçant successfully");
+        try {
+            service.upgradeToCommercant(userId, commercantRequest);
+            return ResponseEntity.ok("User upgraded to Commerçant successfully");
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PostMapping("/create-boutique/{userId}")
@@ -60,6 +73,13 @@ public class AuthenticationController {
         return ResponseEntity.ok("Set working hours successfully");
     }
 
+    @PostMapping("/active/{userId}")
+    public ResponseEntity<String> active(@PathVariable Long userId)
+    {
+        service.active(userId);
+        return ResponseEntity.ok("Active successfully");
+    }
+
     @PostMapping("/verify-token")
     public ResponseEntity<?> verifyToken(@RequestBody Map<String, String> request) {
         String token = request.get("token");
@@ -68,8 +88,15 @@ public class AuthenticationController {
 
                 return ResponseEntity.badRequest().body(Map.of("valid", false, "message", "Invalid or expired token"));
             }
+            String username = jwtService.extractUsername(token);
+            User user  =userRepo.findByEmail(username).get();
+            Set<Role> roles=user.getRoles();
+            if(!user.getActive()) {
+                roles = new HashSet<>();
+                Role role=Role.CLIENT;
+                roles.add(role);
+            }
 
-            Set<String> roles = jwtService.extractRoles(token);
             return ResponseEntity.ok(Map.of(
                     "valid", true,
                     "username", jwtService.extractUsername(token),

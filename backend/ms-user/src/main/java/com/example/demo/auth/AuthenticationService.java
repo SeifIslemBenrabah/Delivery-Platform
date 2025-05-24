@@ -38,6 +38,7 @@ public class AuthenticationService {
                 .lastName(request.getLastname())
                 .email(request.getEmail())
                 .phone(request.getPhone())
+                .active(true)
                 .address(null)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .roles(Set.of(Role.CLIENT)) // Default role is CLIENT
@@ -61,6 +62,7 @@ public class AuthenticationService {
         var user = userRepo.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         System.out.println("after");
+
 
         var jwtToken = jwtService.generateToken(user);
         var refreshToken = jwtService.generateRefreshToken(user); // Generate refresh token
@@ -89,7 +91,8 @@ public class AuthenticationService {
     public void upgradeToLivreur(Long userId, LivreurRequest livreurRequest) {
         var user = userRepo.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
+        if(user.getCommercant()!=null)
+            throw new RuntimeException("you're commercant");
         var livreur = Livreur.builder()
                 .cartNationalId(livreurRequest.getCartNationalId())
                 .vehiclePapiers(livreurRequest.getVehiclePapiers())
@@ -97,7 +100,8 @@ public class AuthenticationService {
                 .build();
 
         user.setLivreur(livreur);
-        user.getRoles().add(Role.LIVREUR); // Add LIVREUR role
+        user.getRoles().add(Role.LIVREUR);
+        user.setActive(false);// Add LIVREUR role
         userRepo.save(user);
        // kafkaPublisher.sendMessage("livreur", "{\"livreurId\":" + user.getId() + "}");
     }
@@ -106,6 +110,8 @@ public class AuthenticationService {
         var user = userRepo.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        if(user.getLivreur()!=null)
+            throw new RuntimeException("you're Livreur");
         var commercant = Commercant.builder()
                 .cartNationalId(commercantRequest.getCartNationalId())
                 .type(commercantRequest.getType())
@@ -113,6 +119,7 @@ public class AuthenticationService {
                 .build();
 
         user.setCommercant(commercant);
+        user.setActive(false);
         user.getRoles().add(Role.COMMERCANT); // Add COMMERCANT role
         userRepo.save(user);
 
@@ -163,7 +170,12 @@ public class AuthenticationService {
         // Save the boutique
         return boutiqueRepo.save(boutique);
     }
-
+    public  void active(Long userId)
+    {
+        User user=userRepo.findById(userId).get();
+        user.setActive(true);
+        userRepo.save(user);
+    }
 
 }
 
