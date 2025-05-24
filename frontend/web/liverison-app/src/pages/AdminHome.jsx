@@ -71,7 +71,7 @@ const AdminHome = () => {
       
   return (
     <div className="font-nunito text-normal min-h-screen flex flex-col">
-    <div className="w-full h-1/12 flex flex-row justify-between items-center px-4 py-1.5">
+    <div className="w-full h-1/12 flex flex-row justify-between items-center px-4 py-1.5 fixed z-40 bg-white">
     <img src={logo} alt="logo" className="w-20 ml-3"/>
     <div className="flex flex-row gap-2.5 items-center">
         <button className="cursor-pointer">
@@ -92,7 +92,7 @@ const AdminHome = () => {
         </button>
     </div>
     </div>
-    <div className="w-full h-1/12 flex flex-row gap-4 justify-center items-center  py-3 bg-primary">
+    <div className="w-full h-1/12 flex flex-row gap-4 justify-center items-center  py-3 bg-primary fixed z-40 top-12">
     {pages.map((page) => (
         
     <div className="relative flex-shrink-0" key={page.id} >
@@ -111,7 +111,7 @@ const AdminHome = () => {
 
     ))}
     </div>
-    <div className="flex-grow pt-11 pb-2 px-20 ">
+    <div className="flex-grow pt-11 pb-2 px-20 mt-20">
         <Outlet />
       </div>
     </div>

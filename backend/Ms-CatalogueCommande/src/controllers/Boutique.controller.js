@@ -32,6 +32,7 @@ const addBoutique = async (req, res) => {
       address: req.body.address,
       photo: uploadResult.secure_url,
       idCommercant: req.body.idCommercant,
+      phone:req.body.phone
     });
 
     console.log(" Boutique saved to MongoDB:", boutique);
@@ -42,37 +43,58 @@ const addBoutique = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
-const boutiquestatusupdate = async (req,res)=>{
-  try{
+const boutiquestatusupdate = async (req, res) => {
+  try {
     if (!req.user.roles.includes('ADMIN')) {
-      return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
+      return res.status(403).json({ message: "Access denied. Not an ADMIN." });
     }
+
     const boutique = await Boutique.findById(req.params.id);
-    if(boutique){
-      return res.status(404).json({ message: "Boutique not found!" })
+    if (!boutique) {
+      return res.status(404).json({ message: "Boutique not found!" });
     }
-    const {statusBoutique} = req.body;
+
+    const { statusBoutique } = req.body;
     if (!['accepte', 'refuse', 'en_attente'].includes(statusBoutique)) {
       return res.status(400).json({ message: "Invalid status!" });
     }
-    const updatedBoutique = await Produit.findByIdAndUpdate(
+
+    const updatedBoutique = await Boutique.findByIdAndUpdate(
       req.params.id,
       { status: statusBoutique },
-      { new: false }
+      { new: true }
     );
-    res.status(200).json({ message: "Product status updated!", Product: updatedBoutique });
+
+    res.status(200).json({ message: "Boutique status updated!", boutique: updatedBoutique });
+  } catch (error) {
+    console.error("Error updating boutique status:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
-  catch(error){
-    console.error("Error fetching products:", err);
-    res.status(500).json({ message: "Server error", error: err });
-  }
-}
+};
+
 const getAllBoutiques = async (req, res) => {
     try {
       const boutiques = await Boutique.find();
       res.status(200).json(boutiques);
     } catch (error) {
       console.error(" Error:", error);
+      res.status(500).json({ message: "Server error", error });
+    }
+  };
+  const getBoutiqueBystatus = async (req, res) => {
+    try {
+      const { status } = req.query;;  // extract status correctly
+      // Validate status if you want, optional
+      const validStatuses = ['accepte', 'refuse', 'en_attente'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: "Invalid status parameter" });
+      }
+  
+      const boutiques = await Boutique.find({ status }); // filter by status
+  
+      res.status(200).json(boutiques);
+    } catch (error) {
+      console.error("Error:", error);
       res.status(500).json({ message: "Server error", error });
     }
   };
@@ -101,9 +123,7 @@ const getAllBoutiques = async (req, res) => {
   
       const user = await response.json();
 
-      return res.status(200).json({boutique,
-      firstName: user.firstName,
-      lastName: user.lastName});
+      return res.status(200).json({boutique,user});
 
     } catch (error) {
       console.error(" Error:", error);
@@ -195,5 +215,6 @@ module.exports = {
     updateBoutique,
     deleteBoutique,
     getBoutiqueByIdCommercant,
-    boutiquestatusupdate
+    boutiquestatusupdate,
+    getBoutiqueBystatus
  };

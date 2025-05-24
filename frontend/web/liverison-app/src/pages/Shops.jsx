@@ -1,31 +1,54 @@
-import React from 'react'
-import {  useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {  getBoutiquesByStatus } from "../services/boutiqueService";
 const Shops = () => {
   const navigate = useNavigate();
   const handleMoreInfo = (id) => {
     navigate(`/Admin/shop/${id}`);
   };
-    const shops = [
-        {
-          id: 1,
-          image: 'https://img.freepik.com/premium-photo/interior-brand-new-fashion-clothing-store_652667-137.jpg?w=2000',
-          name: 'Shop 1',
-          add:'Al wiam , Sidi belabbes',
-          phone: '+213660987635',
+  const [shops, setShops] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+    // const shops = [
+    //     {
+    //       id: 1,
+    //       image: 'https://img.freepik.com/premium-photo/interior-brand-new-fashion-clothing-store_652667-137.jpg?w=2000',
+    //       name: 'Shop 1',
+    //       add:'Al wiam , Sidi belabbes',
+    //       phone: '+213660987635',
 
-        },
-        {
-          id: 2,
-          image: 'https://img.freepik.com/premium-photo/interior-brand-new-fashion-clothing-store_652667-137.jpg?w=2000',
-          name: 'Shop 2',
-          add:'Al wiam , Sidi belabbes',
-          phone: '+213660987635'
-        },
-        // Add more clients or leave it empty to test the "no clients" case
-      ];
+    //     },
+    //     {
+    //       id: 2,
+    //       image: 'https://img.freepik.com/premium-photo/interior-brand-new-fashion-clothing-store_652667-137.jpg?w=2000',
+    //       name: 'Shop 2',
+    //       add:'Al wiam , Sidi belabbes',
+    //       phone: '+213660987635'
+    //     },
+    //     // Add more clients or leave it empty to test the "no clients" case
+    //   ];
+    useEffect(() => {
+      const getBoutiques = async () => {
+        try {
+          setLoading(true);
+          const data = await  getBoutiquesByStatus('accepte'); // your service sends token internally
+          setShops(data);
+        } catch (err) {
+          setError("Failed to load boutiques");
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      getBoutiques();
+    }, []);
       const handleshopRequests =()=>{
         navigate(`/Admin/ShopRequests`)
       }
+      if (loading) return <div>Loading boutiques...</div>;
+      if (error) return <div className="text-red-500">{error}</div>;
+    
     return (
       <div className="w-full h-full flex flex-col  text-white">
         <div className='w-full flex flex-row justify-between'>
@@ -58,14 +81,14 @@ const Shops = () => {
                 className="rounded-xl ring-1 ring-black  p-2 overflow-hidden flex flex-col items-center text-black text-left shadow-lg hover:shadow-xl"
               >
                 <img
-                  src={shop.image}
-                  alt={shop.name}
+                  src={shop.photo}
+                  alt={shop?.nomBoutique}
                   className="w-28 h-28 rounded-lg object-cover mb-3"
                 />
-                <p className="text-lg font-semibold">{shop.name}</p>
-                <p className="text-xs">{shop.add}</p>
-                <p className="text-sm "> {shop.phone}</p>
-                <button  onClick={() => handleMoreInfo(shop.id)}
+                <p className="text-lg font-semibold">{shop?.nomBoutique}</p>
+                <p className="text-xs">{shop?.address.name ? shop?.address.name : "m'sila"}</p>
+                <p className="text-sm">{shop?.phone ? shop?.phone : "no phone"}</p>
+                <button  onClick={() => handleMoreInfo(shop._id)}
                  className="mt-3 px-4 py-1 bg-primary text-white flex flex-row items-center gap-1.5  hover:bg-green-700 rounded-lg text-sm">
                   More Infos
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
