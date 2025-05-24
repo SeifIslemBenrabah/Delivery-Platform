@@ -169,9 +169,6 @@ const getAllBoutiques = async (req, res) => {
   };
   const deleteBoutique = async (req, res) => {
     try {
-      if (!req.user.roles.includes('COMMERCANT')) {
-        return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
-      }
       const boutique = await Boutique.findById(req.params.id);
       if (!boutique) {
         return res.status(404).json({ message: "Boutique not found" });

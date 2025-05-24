@@ -129,16 +129,8 @@ const getProduitById = async (req, res) => {
 const getProduitByIdCatalogue = async (req, res) => {
   try {
     const { boutiqueId, catalogueId } = req.params;
-<<<<<<< HEAD
-    /*if (!mongoose.Types.ObjectId.isValid(boutiqueId)) {
-      return res.status(400).json({ msg: "Invalid boutique ID format." });
-    }*/
-    if (!mongoose.Types.ObjectId.isValid(catalogueId)) {
-      return res.status(400).json({ msg: "Invalid catalogue ID format." });
-    }
-=======
 
->>>>>>> c1081daceeb1ca3adf6567f02feebb4b82637b4d
+
     const boutique = await Boutique.findById(boutiqueId);
 
     if (!boutique) {
@@ -212,9 +204,7 @@ const updateProduit = async (req, res) => {
 
 const deleteProduit = async (req, res) => {
   try {
-    if (!req.user.roles.includes('COMMERCANT')) {
-      return res.status(403).json({ message: "Access denied. Not a COMMERCANT." });
-    }
+
     const produit = await Produit.findByIdAndDelete(req.params.id);
     if (!produit) {
       return res.status(404).json({ message: "Product not found!" });
