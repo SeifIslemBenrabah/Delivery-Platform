@@ -21,7 +21,7 @@ const CommandeSchema = new Schema({
         produit: { type: Schema.Types.ObjectId, ref: "Produit", required: true },
         quantity: { type: Number, required: true, min: 1 }
     }],
-    idBoutique: { type: Schema.Types.ObjectId, ref: "Boutique", required: true },
+    idBoutique: { type: String, ref: "Boutique", required: true },
     idCommercant: { type: String, required: true }
 });
 

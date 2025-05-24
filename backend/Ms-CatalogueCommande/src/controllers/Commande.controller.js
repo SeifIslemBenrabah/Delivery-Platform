@@ -32,18 +32,9 @@ client.start((error) => {
   if (error) {
     console.error('Eureka registration failed:', error);
   } else {
-    console.log('✅ Registered with Eureka!');
+    console.log('Registered with Eureka!');
   }
 });
-async function getUserDetails(userId) {
-  try {
-      const response = await axios.get(`http://localhost:5001/users/${userId}`);
-      return response.data;
-  } catch (error) {
-      console.error('Error fetching user data:', error);
-      return null;
-  }
-}
 const createCommande = async (req, res) => {
   try {
     let { PickUpAddress, DropOffAddress, Livraisontype, idClient, produits } = req.body;
@@ -63,7 +54,7 @@ const createCommande = async (req, res) => {
 
     // Validate product IDs
     const formattedProduits = [];
-    let expectedBoutiqueId = null;
+    let expectedBoutiqueId = "";
     let idCommercant = null;
 
     for (const item of produits) {
@@ -86,9 +77,9 @@ const createCommande = async (req, res) => {
       }
 
       if (!expectedBoutiqueId) {
-        expectedBoutiqueId = boutique._id.toString();
+        expectedBoutiqueId = boutique._id;
         idCommercant = boutique.idCommercant; 
-      } else if (expectedBoutiqueId !== boutique._id.toString()) {
+      } else if (expectedBoutiqueId !== boutique._id) {
         return res.status(400).json({ message: "All products must belong to the same boutique." });
       }
 
@@ -119,7 +110,7 @@ const createCommande = async (req, res) => {
 
     const { hostName, port } = instances[0];
     const port2 = port['$'];
-    const cartApiUrl=`http://172.18.144.1:8020/new_order`; //`http://${hostName}:${port2}/service-optimization/new_order`;
+    const cartApiUrl=`http://localhost:8020/new_order`; //`http://${hostName}:${port2}/service-optimization/new_order`;
 
     await axios.post(cartApiUrl, {
       idCommande: newCommande.id,
