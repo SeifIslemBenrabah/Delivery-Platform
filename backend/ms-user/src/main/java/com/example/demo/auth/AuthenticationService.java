@@ -176,7 +176,30 @@ public class AuthenticationService {
         user.setActive(true);
         userRepo.save(user);
     }
-
+    public List<UserDTO> getUsersByRole(Role role) {
+        List<User> users = userRepo.findUsersByRole(role);
+        return users.stream()
+                .map(this::mapToDto)
+                .toList();
+    }
+    
+    public UserDTO getUserById(Long id) {
+        User user = userRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        return mapToDto(user);
+    }
+    public UserDTO mapToDto(User user) {
+        return UserDTO.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .address(user.getAddress())
+                .active(user.getActive())
+                .roles(user.getRoles())
+                .build();
+    }
 }
 
 

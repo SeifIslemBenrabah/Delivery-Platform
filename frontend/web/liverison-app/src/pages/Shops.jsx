@@ -74,7 +74,7 @@ const Shops = () => {
         {shops.length === 0 ? (
           <div className="text-center text-gray-500 py-20">No Deliveries found.</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {shops.map((shop) => (
               <div
                 key={shop.id}

@@ -110,7 +110,7 @@ const getAllBoutiques = async (req, res) => {
         return res.status(401).json({ message: "Authorization token missing" });
       }
   
-      const url = `http://localhost:8082/users/${boutique.idCommercant}`;
+      const url = `http://localhost:8082/api/v1/auth/users/${boutique.idCommercant}`;
       const response = await fetch(url, {
         method: 'GET',
         headers: {

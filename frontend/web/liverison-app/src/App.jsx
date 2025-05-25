@@ -16,6 +16,7 @@ import  DeliveryRequests from './pages/DeliveryRequests'
 import MerchantDetails from './pages/MerchantDetails'
 import ShopDetails from "./pages/ShopDetails";
 import ShopRequests from './pages/ShopRequests'
+import MerchantRequests from "./pages/MerchantRequests";
 function App() {
   return (
     <>
@@ -31,11 +32,13 @@ function App() {
         <Route path="DeliveryRequests" element={< DeliveryRequests />} />
         <Route path="deliverie/:id" element={<DeliveriesDetails />} />
         <Route path="merchant" element={<Merchant />} />
+        <Route path="MerchantRequests" element={< MerchantRequests />} />
         <Route path="Merchant/:id" element={<MerchantDetails />} />
         <Route path="shops" element={<Shops />} />
         <Route path="ShopRequests" element={< ShopRequests />} />
         <Route path="shop/:id" element={<ShopDetails/>} />
         <Route path="products" element={<Products />} />
+        
           </Route>
       </Routes>
     </>

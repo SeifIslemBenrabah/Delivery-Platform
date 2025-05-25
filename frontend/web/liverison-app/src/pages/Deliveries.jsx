@@ -1,9 +1,12 @@
-import React from 'react';
+import React ,{useEffect, useState}from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import profile from "../assets/img/profile.png"
+import {getuserByRole} from "../services/userService"
 const Deliveries = () => {
   const navigate = useNavigate();
-  const clients = [
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [clients, setClients] = useState([
     {
       id: 1,
       image: 'https://th.bing.com/th/id/OIP.eXWcaYbEtO2uuexHM8sAwwHaHa?rs=1&pid=ImgDetMain',
@@ -21,7 +24,7 @@ const Deliveries = () => {
       email: 'jane@example.com',
     },
     // Add more clients or leave it empty to test the "no clients" case
-  ];
+  ]);
 
   const handleMoreInfo = (id) => {
     navigate(`/Admin/deliverie/${id}`);
@@ -29,6 +32,26 @@ const Deliveries = () => {
   const handleDeliveryRequests =()=>{
     navigate(`/Admin/DeliveryRequests`)
   }
+
+  useEffect(()=>{
+    const getClients  = async ()=>{
+      try {
+        setLoading(true);
+        const data = await getuserByRole("LIVREUR");
+        const activeUsers = data.filter(user => user.active === true);
+        setClients(activeUsers);
+        console.log(data)
+      } catch (err) {
+        setError("Failed to load Clients");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    getClients();
+  },[])
+  if (loading) return <div>Loading Clients...</div>;
+  if (error) return <div className="text-red-500">{error}</div>;
   return (
     <div className="w-full h-full flex flex-col text-white">
       <div className='w-full flex flex-row justify-between'>
@@ -54,17 +77,17 @@ const Deliveries = () => {
         {clients.length === 0 ? (
           <div className="text-center text-gray-500 py-20">No Deliveries found.</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {clients.map((client) => (
               <div key={client.id} className="rounded-xl ring-1 ring-black p-2 overflow-hidden flex flex-col items-center text-black text-left shadow-lg hover:shadow-xl">
                 <img
-                  src={client.image}
+                  src={client.image?client.image:profile}
                   alt={client.name}
                   className="w-28 h-28 rounded-lg object-cover mb-4"
                 />
-                <p className="text-lg font-semibold truncate">{client.name}</p>
-                <p className="text-sm">Age: {client.age}</p>
-                <p className="text-sm">{client.phone}</p>
+                <p className="text-lg font-semibold truncate">{client.firstName+" "+client.lastName}</p>
+                <p className="text-sm">{client.phone?client.phone:"0660987635"}</p>
+                <p className="text-sm">{client.email}</p>
                 <button
                   className="mt-3 px-4 py-1 bg-primary text-white flex flex-row items-center gap-1.5 hover:bg-green-700 rounded-lg text-sm"
                   onClick={() => handleMoreInfo(client.id)}

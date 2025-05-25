@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -79,6 +78,18 @@ public class AuthenticationController {
         service.active(userId);
         return ResponseEntity.ok("Active successfully");
     }
+    @GetMapping("/users-by-role")
+    public ResponseEntity<List<UserDTO>> getUsersByRole(@RequestParam Role role) {
+        List<UserDTO> users = service.getUsersByRole(role);
+        return ResponseEntity.ok(users);
+    }
+    
+@GetMapping("/users/{id}")
+public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+    UserDTO user = service.getUserById(id);
+    return ResponseEntity.ok(user);
+}
+
 
     @PostMapping("/verify-token")
     public ResponseEntity<?> verifyToken(@RequestBody Map<String, String> request) {

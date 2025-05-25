@@ -48,7 +48,7 @@ const ShopDetails = () => {
           setOrders(orders.data)
           console.log(orders) 
           console.log("Array.isArray(ordersResponse):", Array.isArray(orders));
-      console.log("Type of orders:", typeof orders);
+          console.log("Type of orders:", typeof orders);
           console.log("Response data:", data);
         } catch (err) {
           setError("Failed to load boutiques");
@@ -57,7 +57,6 @@ const ShopDetails = () => {
           setLoading(false);
         }
       };
-      
       getBoutiques();
     }, []);
     
@@ -108,7 +107,7 @@ const ShopDetails = () => {
     
     <div className='w-full h-full flex flex-col gap-3 text-[16px]'>
       <div className='w-full flex flex-row items-stretch gap-3'>
-        <div className='bg-gradient-to-r from-[#5CF39C]/70 from-65% to-light w-8/12 flex flex-row items-center gap-6 p-6 rounded-2xl'>
+        <div className='bg-gradient-to-r from-[#5CF39C]/70 from-65% to-light w-10/12 lg:w-8/12 flex flex-row items-center gap-6 p-6 rounded-2xl'>
           <div className='flex flex-col items-center gap-2'>
             <img 
               src={shop?.boutique?.photo} 
@@ -116,7 +115,8 @@ const ShopDetails = () => {
               className="w-40 h-40 rounded-lg object-cover mb-2"
             />
              <p className="text-lg font-semibold">{shop?.boutique?.nomBoutique}</p> 
-            <button className='flex flex-row items-center gap-1 bg-primary py-1 mt-4 px-3 rounded-md text-white'>
+             <p>{shop?.user?.email}</p>
+            <button className='flex flex-row items-center gap-1 bg-primary py-1 mt-4 lg:mt-1 px-3 rounded-md text-white'>
               Send Mail
             </button>
           </div>
@@ -126,7 +126,7 @@ const ShopDetails = () => {
           <div className='flex flex-grow flex-col gap-2'>
             <div className='flex flex-row gap-10'>
               <div className='flex flex-col items-start'>
-                <p>Owner First Name:</p>
+                <p>First Name:</p>
                 <p className="text-lg font-semibold">{shop?.user?.firstName}</p>
               </div>
               <div className='flex flex-col items-start'>
@@ -151,14 +151,8 @@ const ShopDetails = () => {
             </div>
 
             <div className='w-full flex flex-row gap-2  justify-end pr-10'>
-              <button className='bg-light border-[0.4px] border-green-600 flex flex-row items-center text-green-600 gap-1 py-1 px-3 rounded-md'>
-                See Files
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                </svg>
-              </button>
               <button onClick={()=>setpopupdelete(true)} 
-              className='bg-red-600 flex flex-row items-center text-white py-1 px-3 rounded-md'>
+              className='bg-red-600 flex flex-row items-center text-white py-1 lg:mt-2 px-3 rounded-md'>
                 Delete
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
                   <path strokeLinecap="round" strokeLinejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -169,14 +163,16 @@ const ShopDetails = () => {
         </div>
         <div className='flex flex-col gap-2 flex-grow'>
           <div className='flex items-center h-1/2 rounded-2xl border-1 justify-evenly border-green-400'>
-            <img src={Wallet} alt='Wallet'/>
+          <img src={Wallet} alt="Wallet" className="hidden lg:block" />
+
             <div className='flex flex-col items-center'>
               <p>Total Profit</p>
               <p>25300 DA</p>
             </div>
           </div>
           <div className='flex items-center h-1/2 rounded-2xl border-1 justify-evenly border-green-400 px-3'>
-            <img src={Wallet} alt='Wallet'/>
+          <img src={Wallet} alt="Wallet" className="hidden lg:block" />
+
             <div className='flex flex-col items-center'>
               <p>Commandes</p>
               <p>{orders.length}</p>

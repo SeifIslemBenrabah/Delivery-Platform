@@ -1,7 +1,11 @@
-import React ,{useState}from 'react';
+import React ,{useEffect, useState}from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getuserByRole } from '../services/userService';
+import profile from "../assets/img/profile.png"
 const Merchant = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const handleMoreInfo = (id) => {
     navigate(`/Admin/Merchant/${id}`); // 3. Navigate to client details page
   };
@@ -31,8 +35,27 @@ const Merchant = () => {
         shopnum:1
       }
     ])
+    useEffect(()=>{
+      const getClients  = async ()=>{
+        try {
+          setLoading(true);
+          const data = await getuserByRole("COMMERCANT");
+          const activeUsers = data.filter(user => user.active === true);
+        setClients(activeUsers);
+          console.log(data)
+        } catch (err) {
+          setError("Failed to load Clients");
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      }
+      getClients();
+    },[])
+    if (loading) return <div>Loading Clients...</div>;
+    if (error) return <div className="text-red-500">{error}</div>;
     const handleMarchantRequests =()=>{
-      navigate(`/Admin/DeliveryRequests`)
+      navigate(`/Admin/MerchantRequests`)
     }
   return (
     <div className="w-full h-full flex flex-col  text-white">
@@ -71,16 +94,22 @@ const Merchant = () => {
   {clients.length === 0 ? (
     <tr>
       <td colSpan="6" className="text-center py-8 text-gray-500">
-        No clients found.
+        No Commercant found.
       </td>
     </tr>
   ) : (
     clients.map((client) => (
       <tr key={client.id} className="bg-white my-1 text-black">
-        <td className="px-4 py-2">{client.name}</td>
-        <td className="px-4 py-2">{client.shopnum}</td>
-        <td className="px-4 py-2">{client.age}</td>
-        <td className="px-4 py-2">{client.phone}</td>
+        <td className="px-4 py-2">
+          <img
+            src={client.image?client.image:profile}
+            alt={client.name}
+            className="w-10 h-10 rounded-full object-cover"
+          />
+        </td>
+        <td className="px-4 py-2">{client.firstName+" "+client.lastName}</td>
+        <td className="px-4 py-2">{client.age?client.age:"24"}</td>
+        <td className="px-4 py-2">{client.phone?client.phone:"0660987635"}</td>
         <td className="px-4 py-2">{client.email}</td>
         <td className="px-4 py-2">
           <button 

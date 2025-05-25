@@ -61,7 +61,7 @@ const Products = () => {
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               className="w-full px-3 py-2 text-gray-500 rounded-lg border border-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
-            >
+              >
               <option value="">All</option>
               <option value="accepte">Accepte</option>
               <option value="refuse">Refuse</option>

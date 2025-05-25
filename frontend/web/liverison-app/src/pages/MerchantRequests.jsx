@@ -2,13 +2,13 @@ import React ,{useEffect, useState}from 'react';
 import { useNavigate } from 'react-router-dom';
 import {getuserByRole} from "../services/userService"
 import profile from "../assets/img/profile.png"
-const Clients = () => {
+const MerchantRequests = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const handleMoreInfo = (id) => {
     navigate(`/Admin/client/${id}`); // 3. Navigate to client details page
   };
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
     const [clients, setClients] = useState([
       {
         id: 1,
@@ -35,27 +35,41 @@ const Clients = () => {
         image: "https://randomuser.me/api/portraits/men/3.jpg"
       }
     ])
-    useEffect(()=>{
-      const getClients  = async ()=>{
-        try {
-          setLoading(true);
-          const data = await getuserByRole("CLIENT");
-          setClients(data);
-          console.log(data)
-        } catch (err) {
-          setError("Failed to load Clients");
-          console.error(err);
-        } finally {
-          setLoading(false);
+    const handleBack = () => {
+        navigate(`/Admin/merchant`);
+      };
+      useEffect(()=>{
+        const getClients  = async ()=>{
+          try {
+            setLoading(true);
+            const data = await getuserByRole("COMMERCANT");
+            const activeUsers = data.filter(user => user.active === false);
+            setClients(activeUsers);
+            console.log(data)
+          } catch (err) {
+            setError("Failed to load Clients");
+            console.error(err);
+          } finally {
+            setLoading(false);
+          }
         }
-      }
-      getClients();
-    },[])
-    if (loading) return <div>Loading Clients...</div>;
-    if (error) return <div className="text-red-500">{error}</div>;
+        getClients();
+      },[])
+      if (loading) return <div>Loading Clients...</div>;
+      if (error) return <div className="text-red-500">{error}</div>;
   return (
     <div className="w-full h-full flex flex-col  text-white">
-      <div className="relative w-1/3 max-w-md">
+        <div className='flex flex-row items-center justify-between'>
+            <div className='flex flex-row items-center justify-center gap-2'>
+                <button onClick={() => handleBack()}
+                className='text-white bg-black rounded-full'>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                    </svg>
+                </button>
+        <p className='font-bold text-black text-xl'> Merchant Requests</p>
+        </div>
+        <div className="relative w-1/3 max-w-md">
         <input
           type="text"
           placeholder="Search..."
@@ -67,6 +81,7 @@ const Clients = () => {
         </svg>
 
       </div>
+        </div>
       <div className="flex-grow overflow-auto rounded-xl bg-backgroundGray shadow-md mt-4 ">
         <table className="min-w-full text-left text-sm text-gray-300">
           <thead className="uppercase text-xs text-black border-b border-gray-600">
@@ -121,4 +136,4 @@ const Clients = () => {
   );
 };
 
-export default Clients;
+export default MerchantRequests;
