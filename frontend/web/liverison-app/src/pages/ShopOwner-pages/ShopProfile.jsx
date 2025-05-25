@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router";
 import { NavLink } from "react-router";
 import { TbSquareArrowLeft } from "react-icons/tb";
 import { HiLocationMarker } from "react-icons/hi";
@@ -9,23 +10,45 @@ import shopImg from "../../assets/img/Shop-pic.png";
 import StatisticBox from "../../Components/StatisticsBox/StatisticBox";
 import CatalogueListItem from "../../Components/CatalogueListItem";
 import InputLabel from "../../Components/InputLabel";
+import { fetchBoutiqueById } from "../../Services/boutiqueService";
+import axios from "axios";
 const ShopProfile = () => {
-  // const {shopId} = useParams();
-  const [catalogues, setCatalogues] = useState([
-    {
-      name: "catalogue Name",
-      productsNumber: "20 product",
-      creationDate: "22-05-2025",
-    },
-  ]);
+  const { shopId } = useParams();
+  const [shop, setShop] = useState({});
+  const [shopLocation, setShopLocation] = useState([]);
+  const [catalogues, setCatalogues] = useState([]);
   const [addCatalogue, setAddCatalogue] = useState(false);
   const [newCatalogue, setNewCatalogue] = useState("");
+
   const closeBtnHandler = () => {
     setAddCatalogue(false);
     setNewCatalogue("");
   };
   const [catalogueError, setCatalogueError] = useState("");
-  const addCatalogueHandler = () => {
+
+  useEffect(() => {
+    const fetchBoutique = async () => {
+      try {
+        const data = await fetchBoutiqueById(shopId);
+        setShop(data.boutique);
+        setShopLocation(data.boutique.address);
+        setCatalogues(Array.isArray(data?.catalogues) ? data.catalogues : []);
+        // console.log(shop);
+        // console.log(data.boutique);
+        console.log(shopLocation);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    if (shopId) {
+      fetchBoutique();
+    }
+  }, [shopId]);
+
+  const addCatalogueHandler = async () => {
+    const res = await axios.post(
+      `http://localhost:5050/boutiques/${shopId}/catalogues`
+    );
     if (newCatalogue === "") {
       setCatalogueError("the Catalogue name field should be filled");
     } else {
@@ -53,28 +76,28 @@ const ShopProfile = () => {
         <div className="flex  gap-4 items-center ">
           <div className="flex  gap-5 h-[350px] bg-gradient-to-tr from-green-500 to-white w-[70%]  rounded-[16px] p-5">
             <div className="flex flex-col gap-3 h-full justify-center items-center">
-              <img src={shopImg} alt="" className="w-[200px] rounded" />
-              <h2 className="font-semibold text-2xl">Shop name</h2>
+              <img src={shop.photo} alt="" className="w-[200px] rounded" />
+              <h2 className="font-semibold text-2xl">{shop.nomBoutique}</h2>
             </div>
             <div className=" w-[70%] flex flex-col gap-4 p-5 border-l-2 border-gray-900">
               <div className=" w-full  flex  items-center">
                 <div className="w-[40%]">
                   <p>Shop Name :</p>
-                  <p className="font-semibold">shop name</p>
+                  <p className="font-semibold">{shop.nomBoutique}</p>
                 </div>
                 <div>
-                  <p>Registration Date :</p>
-                  <p className="font-semibold">24-02-2025</p>
+                  <p>Description :</p>
+                  <p className="font-semibold">{shop.description}</p>
                 </div>
               </div>
               <div className=" w-full  flex  items-center">
                 <div className="w-[40%]">
-                  <p className="">Work Hours :</p>
-                  <p className="font-semibold">9:00 am - 00:00 pm</p>
+                  <p className="">Phone Number :</p>
+                  <p className="font-semibold">{shop.phone}</p>
                 </div>
                 <div>
                   <p>catalogue Number :</p>
-                  <p className="font-semibold">2</p>
+                  <p className="font-semibold">{catalogues.length}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -83,7 +106,7 @@ const ShopProfile = () => {
                   <p>Location Address :</p>
                 </div>
                 <p className="font-semibold">
-                  La Maquetta , sidi belabbas ville
+                  {shopLocation?.name || "Unknown location"}
                 </p>
               </div>
               <div className="flex justify-end w-full gap-4 mt-22">

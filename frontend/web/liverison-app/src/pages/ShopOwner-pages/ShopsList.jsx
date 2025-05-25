@@ -25,30 +25,38 @@ const ShopsList = () => {
   const [openShopForm, setOpenShopForm] = useState(false);
   const [shopFormError, setShopFormError] = useState("");
   const { setShopAdd } = useContext(ShopContext);
-  // const [allShops, setallShops] = useState([]);
   const [shopsList, setShopsList] = useState([
-    {
-      name: "Shop Name",
-      type: "Shop Type",
-      location: "sidi belabbes, maquoni",
-      picture: `${shopImg}`,
-    },
+    // {
+    //   name: "Shop Name",
+    //   type: "Shop Type",
+    //   location: "sidi belabbes, maquoni",
+    //   picture: `${shopImg}`,
+    // },
   ]);
 
-  // useEffect(() => {
-  //   async function fetchShops() {
-  //     try {
-  //       const responce = await axios.get("http://localhost:5000/boutiques");
-  //       setShopsList(responce.data);
-  //       console.log(responce.data);
-  //     } catch (error) {
-  //       if (error.responce.status === 400) {
-  //         console.log("error 400");
-  //       }
-  //     }
-  //   }
-  //   fetchShops();
-  // }, []);
+  useEffect(() => {
+    async function fetchShops() {
+      try {
+        const responce = await axios.get(
+          `http://localhost:7777/service-commande/boutiques/Commercant/${localStorage.getItem(
+            "userId"
+          )}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        setShopsList(responce?.data);
+        console.log(responce?.data);
+      } catch (error) {
+        if (error.responce.status === 400) {
+          console.log("error 400");
+        }
+      }
+    }
+    fetchShops();
+  }, []);
   // closer shop request pop window fuction
   const closeBtnHandler = () => {
     setOpenShopForm(false);
@@ -73,43 +81,45 @@ const ShopsList = () => {
     } else {
       closeBtnHandler();
     }
-
-    // posting the shop request in the db
-    //
-    //
-    try {
-      const response = await axios.post(
-        "http://localhost:5000/boutiques",
-        JSON.stringify({
-          shopName,
-          shopType,
-          shopPicture,
-          shopPapier,
-          shopLocation,
-          workTime,
-        }),
-        {
-          headers: { "Content-Type": "application/json" },
-          withCredentials: true,
-        }
-      );
-      console.log(JSON.stringify(response?.data));
-      setShopAdd({ shopName, shopType, shopPicture, shopPapier });
-      setShopName("");
-      setShopType("");
-      setShopPicture("");
-      setShopPapier("");
-      console.log("the shop is posted");
-    } catch (error) {
-      if (!error?.response) {
-        setShopFormError("no server response");
-      } else if (error.response?.status === 400) {
-        setShopFormError("invalid informations you entered");
-      } else {
-        setShopFormError("sending request is failed");
-      }
-    }
   };
+
+  // posting the shop request in the db
+  //
+  //
+  //   try {
+  //     const response = await axios.post(
+  //       "http://localhost:5000/boutiques",
+  //       JSON.stringify({
+  //         shopName,
+  //         shopType,
+  //         shopPicture,
+  //         shopPapier,
+  //         shopLocation,
+  //         workTime,
+  //       }),
+  //       {
+  //         headers: { "Content-Type": "application/json" },
+  //         withCredentials: true,
+  //       }
+  //     );
+  //     console.log(JSON.stringify(response?.data));
+  //     setShopAdd({ shopName, shopType, shopPicture, shopPapier });
+  //     setShopName("");
+  //     setShopType("");
+  //     setShopPicture("");
+  //     setShopPapier("");
+  //     console.log("the shop is posted");
+  //   } catch (error) {
+  //     if (!error?.response) {
+  //       setShopFormError("no server response");
+  //     } else if (error.response?.status === 400) {
+  //       setShopFormError("invalid informations you entered");
+  //     } else {
+  //       setShopFormError("sending request is failed");
+  //     }
+  //   }
+  // };
+
   return (
     <div>
       <div className="flex justify-between items-center ">
@@ -136,20 +146,36 @@ const ShopsList = () => {
           <AiOutlinePlusCircle className="text-[20px]" />
         </button>
       </div>
-      <div className="w-full grid-cols-6 gap-2.5  my-6">
-        {shopsList.map((e, i) => {
-          return (
-            <ShopCard
-              key={i}
-              image={e.picture}
-              name={e.name}
-              type={e.type}
-              location={e.location}
-              // onclick={shopProfileHandler}
-            />
-          );
-        })}
-      </div>
+
+      {shopsList.length === 0 ? (
+        <div className="w-full grid grid-cols-6 gap-2.5  my-6">
+          {shopsList
+            .filter((shop) => {
+              return (
+                shop.nomBoutique.toLowerCase().includes(search.toLowerCase()) ||
+                shop.address.name.toLowerCase().includes(search.toLowerCase())
+              );
+            })
+            .map((e) => {
+              return (
+                <ShopCard
+                  key={e._id}
+                  image={e.photo}
+                  name={e.nomBoutique}
+                  phone={e.phone}
+                  location={e.address.name}
+                  // onclick={shopProfileHandler}
+                  urlProfile={`../shopprofile/${e._id}`}
+                />
+              );
+            })}
+        </div>
+      ) : (
+        <h2 className="text-center w-full text-[20px] text-gray-700 mt-20">
+          there is no Shop
+        </h2>
+      )}
+
       {/* this is add shop pop up window */}
       {openShopForm && (
         <div className="fixed inset-0 bg-[#000000a1] flex items-center justify-center gap-2.5 z-10">

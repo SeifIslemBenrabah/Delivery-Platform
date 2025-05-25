@@ -5,7 +5,7 @@ import { FiShield } from "react-icons/fi";
 import logo from "../assets/img/VerticalLogo.png";
 import loginImg from "../assets/img/LoginImage.png";
 import loginBg from "../assets/img/loginBg.png";
-import { Link, Navigate } from "react-router";
+import { Link, Navigate, useNavigate } from "react-router";
 import axios from "axios";
 import AuthContext from "../Context/AuthProvider";
 
@@ -13,6 +13,7 @@ const LOGIN_URL = "http://localhost:8082/api/v1/auth/authenticate";
 
 const Login = () => {
   const userRef = useRef();
+  const navigate = useNavigate();
   const { setAuth } = useContext(AuthContext);
 
   const [email, setEmail] = useState("");
@@ -51,40 +52,41 @@ const Login = () => {
       const res = await axios.post(
         "http://localhost:8082/api/v1/auth/verify-token",
         {
-          token: response.data.token,
+          token: response?.data?.token,
         },
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${response?.data?.token}`,
+            // Authorization: `Bearer ${response?.data?.token}`,
           },
         }
       );
       localStorage.setItem("token", accessToken);
-      const roles = res.data.roles;
+      const roles = res?.data?.roles;
       const userId = response?.data?.userId;
       console.log(roles);
       console.log(userId);
-      // localStorage.setItem("Roles", roles);
+      localStorage.setItem("Roles", roles);
+      localStorage.setItem("userId", userId);
       // console.log(localStorage.getItem("Roles"));
-      setAuth({ email, pwd, accessToken });
+      setAuth({ email, pwd, accessToken, roles, userId });
       setEmail("");
       setPwd("");
-      // Navigate({ to: "/shopownerhome" });
+      navigate("/shopownerhome");
       setSuccess(true);
       console.log(accessToken, "this is the response" + response);
     } catch (err) {
-      // if (!err?.response) {
-      //   setPasswordError("No Server Response");
-      // } else if (err.response?.status === 400) {
-      //   if (email === "") {
-      //     setEmailError("missing email or invalid!");
-      //   } else if (pwd === "") {
-      //     setPasswordError("missing password or invalid!");
-      //   }
-      // } else if (err.response?.status === 401) {
-      //   setPasswordError("informations not found!");
-      // } else setPasswordError("Login Failed!");
+      if (!err?.response) {
+        setPasswordError("No Server Response");
+      } else if (err.response?.status === 400) {
+        if (email === "") {
+          setEmailError("missing email or invalid!");
+        } else if (pwd === "") {
+          setPasswordError("missing password or invalid!");
+        }
+      } else if (err.response?.status === 401) {
+        setPasswordError("informations not found!");
+      } else setPasswordError("Login Failed!");
       console.log(err);
     }
   };

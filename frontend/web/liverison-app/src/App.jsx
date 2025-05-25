@@ -41,7 +41,7 @@ function App() {
         <Route path="login" element={<Login />} />
         <Route path="registration" element={<Registration />} />
 
-        <Route element={<RequiredAuth allowedRoles={["commercant"]} />}>
+        <Route element={<RequiredAuth allowedRoles={["COMMERCANT"]} />}>
           <Route path="shopownerhome" element={<ShopOwnerHome />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<DashBoard />} />
@@ -68,7 +68,7 @@ function App() {
           </Route>
         </Route>
 
-        <Route element={<RequiredAuth allowedRoles={["admin"]} />}>
+        <Route element={<RequiredAuth allowedRoles={["ADMIN"]} />}>
           <Route path="admin" element={<AdminHome />}>
             <Route index element={<AdminDashboard />} />
             <Route path="clients" element={<Clients />} />
