@@ -30,6 +30,9 @@ const addProduit = async (req, res) => {
         console.log(req.body.Catalogueid );
         return res.status(404).json({ message: `Boutique not found to add product` });
       }
+      if (boutique.status !== 'accepte') {
+        return res.status(403).json({ message: `Boutique is not accepted` });
+      }
       if(boutique._id !== req.body.Boutiqueid){
         return res.status(400).json({ message: `catalogue must belong to the same boutique` });
       }
@@ -83,16 +86,30 @@ const productstatusupdate = async (req,res)=>{
 }
 const getAllProduits = async (req, res) => {
   try {
-    const produits = await Produit.find().populate({
+    const { status } = req.query;
+
+    const validStatuses = ['accepte', 'refuse', 'en_attente'];
+
+    let filter = {};
+
+    if (status) {
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: "Invalid status parameter" });
+      }
+      filter.status = status;
+    }
+
+    const produits = await Produit.find(filter).populate({
       path: 'idBoutique',
-      select: 'nomBoutique' // only include the boutique name
     });
+
     res.status(200).json(produits);
   } catch (error) {
     console.error("Error fetching products:", error);
     res.status(500).json({ message: "Server error", error });
   }
 };
+
 const getProduitBySearch = async (req, res) => {
   try {
     const searchTerm = req.query.search?.trim();
@@ -116,7 +133,8 @@ const getProduitBySearch = async (req, res) => {
 
 const getProduitById = async (req, res) => {
   try {
-    const produit = await Produit.findById(req.params.id);
+    const produit = await Produit.findById(req.params.id).populate('idBoutique');
+
     if (!produit) {
       return res.status(404).json({ message: "Product not found!" });
     }
@@ -129,12 +147,7 @@ const getProduitById = async (req, res) => {
 const getProduitByIdCatalogue = async (req, res) => {
   try {
     const { boutiqueId, catalogueId } = req.params;
-
-
-
     const boutique = await Boutique.findById(boutiqueId);
-
-
     if (!boutique) {
       return res.status(404).json({ msg: "Boutique not found." });
     }
@@ -143,7 +156,7 @@ const getProduitByIdCatalogue = async (req, res) => {
     if (!catalogue) {
       return res.status(404).json({ msg: "Catalogue not found." });
     }
-    const produits = await Produit.find({ catalogueId });
+    const produits = await Produit.find({ Catalogueid:catalogueId });
 
     if (produits.length === 0) {
       return res.status(200).json({ message: "No products found in this catalog." });

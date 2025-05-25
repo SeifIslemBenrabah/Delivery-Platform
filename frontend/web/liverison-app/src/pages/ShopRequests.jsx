@@ -36,6 +36,7 @@ const DeliveryRequests = () => {
       await updatestatusBoutique(selectedShop.boutique._id,status);
       console.log(selectedShop._id)
       setPopup(false);
+      
       setShops((prev) => prev.filter((shop) => shop._id !== selectedShop._id));
     } catch (error) {
       console.error("Failed to update boutique status:", error);
