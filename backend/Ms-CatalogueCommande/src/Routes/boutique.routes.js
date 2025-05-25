@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const auth = require('../middlewares/auth'); // import your auth middleware
+const auth = require('../middlewares/auth');
 const upload = require('../middlewares/multer');
 
 const {
@@ -11,16 +11,18 @@ const {
   updateBoutique,
   deleteBoutique,
   getBoutiqueByIdCommercant,
-  boutiquestatusupdate
+  boutiquestatusupdate,
+  getBoutiqueBystatus // ✅ import the function
 } = require('../controllers/Boutique.controller');
 
 // Protect all routes with auth middleware
 router.post('/', auth(), upload.single('photo'), addBoutique);
-router.get('/', auth(), getAllBoutiques);
+router.get('/', auth(), getBoutiqueBystatus);
+
 router.get('/:id', auth(), getBoutiqueById);
 router.get('/Commercant/:id', auth(), getBoutiqueByIdCommercant);
 router.put('/:id', auth(), upload.single('photo'), updateBoutique);
 router.delete('/:id', auth(), deleteBoutique);
-router.put('/status/:id',auth(),boutiquestatusupdate)
+router.put('/status/:id', auth(), boutiquestatusupdate);
 
 module.exports = router;

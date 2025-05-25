@@ -137,27 +137,27 @@ const ShopDetails = () => {
             <div className="flex flex-row gap-10">
               <div className="flex flex-col items-start">
                 <p>Owner First Name:</p>
-                <p className="text-lg font-semibold">{shop.ownerfirstname}</p>
+                <p className="text-lg font-semibold">{shop?.user?.firstName}</p>
               </div>
               <div className="flex flex-col items-start">
                 <p>Last Name:</p>
-                <p className="text-lg font-semibold">{shop.ownerlastname}</p>
+                <p className="text-lg font-semibold">{shop?.user?.lastName}</p>
               </div>
             </div>
 
             <div className="flex flex-col items-start">
               <p>Phone Number:</p>
-              <p className="text-lg font-semibold">{shop.phoneNumber}</p>
+               <p className="text-lg font-semibold">{shop?.boutique?.phone?shop.boutique.phone :"don't have"}</p> 
             </div>
 
             <div className="flex flex-row items-center gap-2">
               <p>Location Address:</p>
-              <p className="text-lg font-semibold">{shop.address}</p>
+             <p className="text-lg font-semibold">{shop?.boutique?.address?.name?shop?.boutique?.address?.name:"don't have"}</p>
             </div>
 
             <div className="flex flex-col items-start">
               <p>Registration Date:</p>
-              <p className="text-lg font-semibold">{shop.registrationDate}</p>
+              <p className="text-lg font-semibold">{shop.registrationDate? shop.registrationDate:"26-05-2024"}</p>
             </div>
 
             <div className="w-full flex flex-row gap-2 justify-end pr-10">
@@ -223,12 +223,12 @@ const ShopDetails = () => {
               key={order.id}
               className="w-full bg-white flex flex-row justify-between items-center p-3 text-[12px] rounded-lg shadow-sm">
               <div>
-                <p className="font-semibold">Order #{order.id}</p>
+                <p className="font-semibold">Order #{order?.id}</p>
               </div>
               <div className="flex flex-row gap-2 items-center">
                 <p className="text-gray-700">{order.price}</p>
                 <span>|</span>
-                <p className="text-gray-700">{order.items} items</p>
+                <p className="text-gray-700">{order?.produits.length} items</p>
               </div>
               <div className="flex flex-row gap-2 items-center">
                 <p className="text-gray-700 ">
@@ -237,7 +237,7 @@ const ShopDetails = () => {
                 <p className="text-gray-500 ">Payment: {order.paymenttype}</p>
               </div>
               <div>
-                <p className="text-gray-700 ">{order.date}</p>
+                <p className="text-gray-700 ">{order?.date}</p>
               </div>
             </div>
           ))}
@@ -283,6 +283,7 @@ const ShopDetails = () => {
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 };

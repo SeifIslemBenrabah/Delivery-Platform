@@ -21,8 +21,7 @@ import java.util.Set;
 public class AuthenticationController {
     private final AuthenticationService service;
     private final JwtService jwtService;
-    private  final UserRepo userRepo;
-    
+    private final UserRepo userRepo;
 
     @PostMapping("/register")
     public ResponseEntity<AuthenticationResponse> register(@RequestBody RegisterRequest request) {
@@ -34,6 +33,26 @@ public class AuthenticationController {
         return ResponseEntity.ok(service.authenticate(request));
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getUserById(@PathVariable Long userId) {
+        var user = service.getUserById(userId);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(user);
+    }
+
+    @PutMapping("/user/{userId}")
+    public ResponseEntity<?> updateUser(
+            @PathVariable Long userId,
+            @RequestBody UpdateUserRequest updateUserRequest) {
+        var updatedUser = service.updateUser(userId, updateUserRequest);
+        if (updatedUser == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(updatedUser);
+    }
+
     @PostMapping("/upgrade-to-livreur/{userId}")
     public ResponseEntity<String> upgradeToLivreur(
             @PathVariable Long userId,
@@ -41,8 +60,7 @@ public class AuthenticationController {
         try {
             service.upgradeToLivreur(userId, livreurRequest);
             return ResponseEntity.ok("User upgraded to Livreur successfully");
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -54,8 +72,7 @@ public class AuthenticationController {
         try {
             service.upgradeToCommercant(userId, commercantRequest);
             return ResponseEntity.ok("User upgraded to Commerçant successfully");
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -67,15 +84,14 @@ public class AuthenticationController {
     }
 
     @PostMapping("/set-working-hours/{userId}/{boutiqueId}")
-    public ResponseEntity<String> setWorkingHours(@PathVariable Long userId, @PathVariable Long boutiqueId, @RequestBody List<HeuresTravailRequest> heuresTravailRequest)
-    {
-        service.setWorkingHours(userId,boutiqueId,heuresTravailRequest);
+    public ResponseEntity<String> setWorkingHours(@PathVariable Long userId, @PathVariable Long boutiqueId,
+            @RequestBody List<HeuresTravailRequest> heuresTravailRequest) {
+        service.setWorkingHours(userId, boutiqueId, heuresTravailRequest);
         return ResponseEntity.ok("Set working hours successfully");
     }
 
     @PostMapping("/active/{userId}")
-    public ResponseEntity<String> active(@PathVariable Long userId)
-    {
+    public ResponseEntity<String> active(@PathVariable Long userId) {
         service.active(userId);
         return ResponseEntity.ok("Active successfully");
     }
@@ -89,19 +105,18 @@ public class AuthenticationController {
                 return ResponseEntity.badRequest().body(Map.of("valid", false, "message", "Invalid or expired token"));
             }
             String username = jwtService.extractUsername(token);
-            User user  =userRepo.findByEmail(username).get();
-            Set<Role> roles=user.getRoles();
-            if(!user.getActive()) {
+            User user = userRepo.findByEmail(username).get();
+            Set<Role> roles = user.getRoles();
+            if (!user.getActive()) {
                 roles = new HashSet<>();
-                Role role=Role.CLIENT;
+                Role role = Role.CLIENT;
                 roles.add(role);
             }
 
             return ResponseEntity.ok(Map.of(
                     "valid", true,
                     "username", jwtService.extractUsername(token),
-                    "roles", roles
-            ));
+                    "roles", roles));
         } catch (Exception e) {
             System.out.println(e);
             return ResponseEntity.badRequest().body(Map.of("valid", false, "message", "Error verifying token"));
@@ -115,13 +130,39 @@ public class AuthenticationController {
             this.username = username;
         }
 
-        @Override public String getUsername() { return username; }
-        @Override public boolean isAccountNonExpired() { return true; }
-        @Override public boolean isAccountNonLocked() { return true; }
-        @Override public boolean isCredentialsNonExpired() { return true; }
-        @Override public boolean isEnabled() { return true; }
-        @Override public java.util.Collection<? extends GrantedAuthority> getAuthorities() { return java.util.List.of(); }
-        @Override public String getPassword() { return ""; }
+        @Override
+        public String getUsername() {
+            return username;
+        }
+
+        @Override
+        public boolean isAccountNonExpired() {
+            return true;
+        }
+
+        @Override
+        public boolean isAccountNonLocked() {
+            return true;
+        }
+
+        @Override
+        public boolean isCredentialsNonExpired() {
+            return true;
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return true;
+        }
+
+        @Override
+        public java.util.Collection<? extends GrantedAuthority> getAuthorities() {
+            return java.util.List.of();
+        }
+
+        @Override
+        public String getPassword() {
+            return "";
+        }
     }
 }
-
