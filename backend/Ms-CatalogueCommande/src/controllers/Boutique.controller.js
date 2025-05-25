@@ -140,7 +140,7 @@ const getAllBoutiques = async (req, res) => {
         if( boutiques.length === 0){
            return res.status(200).json({ message: "This Commercant doesn't have any Boutique" });
         }
-      res.status(200).json(boutique);
+      res.status(200).json(boutiques);
     } catch (error) {
       console.error(" Error:", error);
       res.status(500).json({ message: "Server error", error });

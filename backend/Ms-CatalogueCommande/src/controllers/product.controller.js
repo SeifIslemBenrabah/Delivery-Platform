@@ -100,12 +100,14 @@ const getAllProduits = async (req, res) => {
       path: "idBoutique",
       select: "nomBoutique", // only include the boutique name
     });
+
     res.status(200).json(produits);
   } catch (error) {
     console.error("Error fetching products:", error);
     res.status(500).json({ message: "Server error", error });
   }
 };
+
 const getProduitBySearch = async (req, res) => {
   try {
     const searchTerm = req.query.search?.trim();
@@ -131,7 +133,10 @@ const getProduitBySearch = async (req, res) => {
 
 const getProduitById = async (req, res) => {
   try {
-    const produit = await Produit.findById(req.params.id);
+    const produit = await Produit.findById(req.params.id).populate(
+      "idBoutique"
+    );
+
     if (!produit) {
       return res.status(404).json({ message: "Product not found!" });
     }
@@ -166,7 +171,7 @@ const getProduitByIdCatalogue = async (req, res) => {
     if (!catalogue) {
       return res.status(404).json({ msg: "Catalogue not found." });
     }
-    const produits = await Produit.find({ catalogueId });
+    const produits = await Produit.find({ Catalogueid: catalogueId });
 
     if (produits.length === 0) {
       return res

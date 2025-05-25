@@ -3,37 +3,60 @@ import { useNavigate } from "react-router-dom";
 
 const DeliveryRequests = () => {
   const navigate = useNavigate();
-  const handleMoreInfo = (id) => {
-    navigate(`/Admin/client/${id}`); // 3. Navigate to client details page
+
+  const [shops, setShops] = useState([]);
+  const [shop, setshop] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [popup, setPopup] = useState(false);
+  const [selectedShop, setSelectedShop] = useState(null);
+
+  useEffect(() => {
+    const getBoutiques = async () => {
+      try {
+        setLoading(true);
+        const data = await getBoutiquesByStatus("en_attente");
+        setShops(data);
+      } catch (err) {
+        setError("Failed to load boutiques");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getBoutiques();
+  }, []);
+
+  const handleBack = () => navigate(-1);
+
+  const handleUpdate = async (status) => {
+    try {
+      await updatestatusBoutique(selectedShop.boutique._id, status);
+      console.log(selectedShop._id);
+      setPopup(false);
+      setShops((prev) => prev.filter((shop) => shop._id !== selectedShop._id));
+    } catch (error) {
+      console.error("Failed to update boutique status:", error);
+    }
   };
-  const [clients, setClients] = useState([
-    {
-      id: 1,
-      name: "Emma Johnson",
-      age: 29,
-      phone: "123-456-7890",
-      email: "emma.johnson@example.com",
-      image: "https://randomuser.me/api/portraits/men/1.jpg",
-    },
-    {
-      id: 2,
-      name: "Liam Smith",
-      age: 34,
-      phone: "987-654-3210",
-      email: "liam.smith@example.com",
-      image: "https://randomuser.me/api/portraits/men/2.jpg",
-    },
-    {
-      id: 3,
-      name: "Olivia Brown",
-      age: 26,
-      phone: "555-123-4567",
-      email: "olivia.brown@example.com",
-      image: "https://randomuser.me/api/portraits/men/3.jpg",
-    },
-  ]);
-  const handleBack = () => {
-    navigate(-1);
+  const handlegetboutiqueInfos = async (id) => {
+    try {
+      const data = await fetchBoutiqueById(id); // your service sends token internally
+      setSelectedShop(data);
+      console.log("data response:", data.boutique);
+      console.log("Type of orders:", typeof orders);
+      console.log("Response data:", data);
+    } catch (err) {
+      setError("Failed to load boutiques");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleShopClick = async (shop) => {
+    await handlegetboutiqueInfos(shop._id);
+    setPopup(true);
   };
   return (
     <div className="w-full h-full flex flex-col  text-white">
