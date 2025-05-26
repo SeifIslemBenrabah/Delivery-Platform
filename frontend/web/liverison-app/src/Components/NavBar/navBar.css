@@ -1,0 +1,11 @@
+.active {
+  color: #19bf5f;
+}
+.activeDrop {
+  font-weight: bolder;
+  border-bottom: 1.5px solid white;
+}
+
+ul a {
+  cursor: pointer;
+}

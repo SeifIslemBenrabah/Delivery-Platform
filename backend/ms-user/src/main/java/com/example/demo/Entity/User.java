@@ -30,6 +30,13 @@ public class User implements UserDetails {
     private String address;
     private String password;
     private Boolean active;
+    @Column(name = "profile_image")
+    private String profileImage;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender")
+    private com.example.demo.Entity.Gender gender;
+    private Integer age;
 
     @ElementCollection(targetClass = Role.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))

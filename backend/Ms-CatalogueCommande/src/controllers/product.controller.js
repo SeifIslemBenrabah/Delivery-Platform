@@ -232,7 +232,7 @@ const deleteProduit = async (req, res) => {
 };
 
 module.exports = {
-  addProduit,
+  addProduit, 
   getAllProduits,
   getProduitById,
   updateProduit,

@@ -20,7 +20,7 @@ const ProduitSchema = new Schema({
         default: 'en_attente'
     },
     idBoutique: { type: String, ref: "Boutique", required: true },
-    idCommercant: { type: String }
+    idCommercant: { type: String }  
 }, { timestamps: true });
 
 const Produit = mongoose.model("Produit", ProduitSchema);

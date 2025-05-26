@@ -33,6 +33,21 @@ export const fetchBoutiqueById = async (id)=>{
           throw error;
         }
 }
+export const fetchBoutiqueByIdCommarcent = async (id)=>{
+  try{
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`http://localhost:5050/boutiques/Commercant/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+    
+        return res.data;
+      } catch (error) {
+        console.error("Error fetching boutiques:", error);
+        throw error;
+      }
+}
 export const fetchCommandesByBoutiqueId = async (id)=>{
     try{
         const token = localStorage.getItem("token");

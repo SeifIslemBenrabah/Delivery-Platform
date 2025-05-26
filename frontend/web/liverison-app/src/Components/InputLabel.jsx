@@ -1,6 +1,14 @@
 import React from "react";
 
-const InputLabel = ({ icon: Icon, type, inputName, errorMassage }) => {
+const InputLabel = ({
+  icon: Icon,
+  type,
+  inputName,
+  errorMassage,
+  onchange,
+  value,
+  name,
+}) => {
   return (
     <div className="flex-col gap-2 mb-6 w-[70%]">
       <div className="flex justify-between mb-1">
@@ -17,8 +25,9 @@ const InputLabel = ({ icon: Icon, type, inputName, errorMassage }) => {
         <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
         <input
           type={type}
-          placeholder={inputName}
+          placeholder={name}
           className="pl-10 py-2 border rounded-md w-full"
+          onChange={onchange}
         />
       </div>
       <p className="text-left w-full text-red-500 hidden">{errorMassage}</p>

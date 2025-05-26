@@ -1,43 +1,22 @@
 const Commande = require("../models/Commande");
-const Produit = require('../models/Produit');
-const {Boutique} = require("../models/Boutique");
+const Produit = require("../models/Produit");
+const { Boutique } = require("../models/Boutique");
 require("dotenv").config();
 const mongoose = require("mongoose");
-const axios = require('axios');
-const { Eureka } = require('eureka-js-client');
-//const client = require('../index')
-const PORT = process.env.PORT || 5050;
-const client = new Eureka({
-  instance: {
-    app: 'ms-commande',
-    hostName: 'localhost',
-    ipAddr: '127.0.0.1',
-    port: {
-      '$': PORT,
-      '@enabled': true
-    },
-    vipAddress: 'ms-commande',
-    dataCenterInfo: {
-      '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
-      name: 'MyOwn',
-    },
-  },
-  eureka: {
-    host: 'localhost',
-    port: 8888,
-    servicePath: '/eureka/apps/',
-  },
-});
-client.start((error) => {
-  if (error) {
-    console.error('Eureka registration failed:', error);
-  } else {
-    console.log('Registered with Eureka!');
+const axios = require("axios");
+async function getUserDetails(userId) {
+  try {
+    const response = await axios.get(`http://localhost:5001/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    return null;
   }
-});
+}
 const createCommande = async (req, res) => {
   try {
-    let { PickUpAddress, DropOffAddress, Livraisontype, idClient, produits } = req.body;
+    let { PickUpAddress, DropOffAddress, Livraisontype, idClient, produits } =
+      req.body;
 
     if (!DropOffAddress || !Livraisontype || !idClient || !produits) {
       return res.status(400).json({ message: "Missing required fields!" });
@@ -47,7 +26,9 @@ const createCommande = async (req, res) => {
     if (!PickUpAddress) {
       const userDetails = await getUserDetails(idClient);
       if (!userDetails || !userDetails.PickUpAddress) {
-        return res.status(400).json({ message: "Invalid client ID or missing PickUpAddress!" });
+        return res
+          .status(400)
+          .json({ message: "Invalid client ID or missing PickUpAddress!" });
       }
       PickUpAddress = userDetails.PickUpAddress;
     }
@@ -62,32 +43,42 @@ const createCommande = async (req, res) => {
       const { produit, quantity, infos } = item;
 
       if (!mongoose.Types.ObjectId.isValid(produit)) {
-        return res.status(400).json({ message: `Invalid product ID: ${produit}` });
+        return res
+          .status(400)
+          .json({ message: `Invalid product ID: ${produit}` });
       }
 
       const productDoc = await Produit.findById(produit);
       if (!productDoc) {
-        return res.status(404).json({ message: `Product not found: ${produit}` });
+        return res
+          .status(404)
+          .json({ message: `Product not found: ${produit}` });
       }
 
       // Find the boutique through the product's catalogue
-      const boutique = await Boutique.findOne({ "catalogues._id": productDoc.Catalogueid });
+      const boutique = await Boutique.findOne({
+        "catalogues._id": productDoc.Catalogueid,
+      });
       if (!boutique) {
         console.log(productDoc.Catalogueid);
-        return res.status(404).json({ message: `Boutique not found for product: ${produit}` });
+        return res
+          .status(404)
+          .json({ message: `Boutique not found for product: ${produit}` });
       }
 
       if (!expectedBoutiqueId) {
         expectedBoutiqueId = boutique._id;
-        idCommercant = boutique.idCommercant; 
+        idCommercant = boutique.idCommercant;
       } else if (expectedBoutiqueId !== boutique._id) {
-        return res.status(400).json({ message: "All products must belong to the same boutique." });
+        return res
+          .status(400)
+          .json({ message: "All products must belong to the same boutique." });
       }
       totalPrice += productDoc.price * quantity;
       formattedProduits.push({
         produit: new mongoose.Types.ObjectId(produit),
         quantity,
-        infos
+        infos,
       });
     }
 
@@ -100,36 +91,36 @@ const createCommande = async (req, res) => {
       produits: formattedProduits,
       idBoutique: expectedBoutiqueId,
       idCommercant,
-      price: totalPrice 
+      price: totalPrice,
     });
 
     await newCommande.save();
 
-    const instances = client.getInstancesByAppId('MS-GATEWAY');
+    const instances = client.getInstancesByAppId("MS-GATEWAY");
     if (!instances || instances.length === 0) {
       return res.status(503).json({ message: "cart-api not available" });
     }
 
     const { hostName, port } = instances[0];
-    const port2 = port['$'];
-    const cartApiUrl=`http://localhost:8020/new_order`; //`http://${hostName}:${port2}/service-optimization/new_order`;
+    const port2 = port["$"];
+    const cartApiUrl = `http://localhost:8020/new_order`; //`http://${hostName}:${port2}/service-optimization/new_order`;
 
     await axios.post(cartApiUrl, {
       idCommande: newCommande.id,
       depart: [PickUpAddress.latitude, PickUpAddress.longitude],
-      arrivee: [DropOffAddress.latitude, DropOffAddress.longitude]
+      arrivee: [DropOffAddress.latitude, DropOffAddress.longitude],
     });
 
-    res.status(201).json({ message: "Commande created successfully!", commande: newCommande });
-
+    res.status(201).json({
+      message: "Commande created successfully!",
+      commande: newCommande,
+    });
   } catch (error) {
+    console.error("Error creating Commande:", error);
     console.error("Error creating Commande:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
-
-
 
 const getAllCommandes = async (req, res) => {
   try {
@@ -143,7 +134,9 @@ const getAllCommandes = async (req, res) => {
 const getCommandeById = async (req, res) => {
   try {
     const { commandeId } = req.params;
-    const commande = await Commande.findById(commandeId).populate("produits.produit");
+    const commande = await Commande.findById(commandeId).populate(
+      "produits.produit"
+    );
 
     if (!commande) {
       return res.status(404).json({ message: "Commande not found!" });
@@ -154,81 +147,91 @@ const getCommandeById = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-const getCommandeByClientId = async (req,res)=>{
+const getCommandeByClientId = async (req, res) => {
   const { clientId } = req.params;
-  try{
+  try {
     if (!clientId) {
       return res.status(400).json({
-          success: false,
-          message: "Client ID is required"
-      });
-  }
-  const commandes = await Commande.find({ idClient: clientId }).sort({ date: -1 });
-  res.status(200).json({
-    success: true,
-    data: commandes
-});
-  }catch(error){
-    console.error('Error fetching client commands:', error);
-    res.status(500).json({
         success: false,
-        message: "Server error while fetching commands",
-        error: error.message
+        message: "Client ID is required",
+      });
+    }
+    const commandes = await Commande.find({ idClient: clientId }).sort({
+      date: -1,
+    });
+    res.status(200).json({
+      success: true,
+      data: commandes,
+    });
+  } catch (error) {
+    console.error("Error fetching client commands:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching commands",
+      error: error.message,
     });
   }
-}
-const getCommandeByBoutiqueId = async (req,res)=>{
+};
+const getCommandeByBoutiqueId = async (req, res) => {
   const { boutiqueId } = req.params;
-  try{
+  try {
     if (!boutiqueId) {
       return res.status(400).json({
-          success: false,
-          message: "Client ID is required"
-      });
-  }
-  const commandes = await Commande.find({ idBoutique: boutiqueId }).sort({ date: -1 });
-  res.status(200).json({
-    success: true,
-    data: commandes
-});
-  }catch(error){
-    console.error('Error fetching client commands:', error);
-    res.status(500).json({
         success: false,
-        message: "Server error while fetching commands",
-        error: error.message
+        message: "Client ID is required",
+      });
+    }
+    const commandes = await Commande.find({ idBoutique: boutiqueId }).sort({
+      date: -1,
+    });
+    res.status(200).json({
+      success: true,
+      data: commandes,
+    });
+  } catch (error) {
+    console.error("Error fetching client commands:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching commands",
+      error: error.message,
     });
   }
-}
-const getCommandeByCommarcentId = async (req,res)=>{
+};
+const getCommandeByCommarcentId = async (req, res) => {
   const { commarcentId } = req.params;
-  try{
+  try {
     if (!commarcentId) {
       return res.status(400).json({
-          success: false,
-          message: "Client ID is required"
-      });
-  }
-  const commandes = await Commande.find({ idCommercant: commarcentId }).sort({ date: -1 });
-  res.status(200).json({
-    success: true,
-    data: commandes
-});
-  }catch(error){
-    console.error('Error fetching client commands:', error);
-    res.status(500).json({
         success: false,
-        message: "Server error while fetching commands",
-        error: error.message
+        message: "Client ID is required",
+      });
+    }
+    const commandes = await Commande.find({ idCommercant: commarcentId }).sort({
+      date: -1,
+    });
+    res.status(200).json({
+      success: true,
+      data: commandes,
+    });
+  } catch (error) {
+    console.error("Error fetching client commands:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching commands",
+      error: error.message,
     });
   }
-}
+};
 const updateCommandeStatus = async (req, res) => {
   try {
     const { commandeId } = req.params;
     const { statusCommande } = req.body;
 
-    if (!["En cours", "Validée", "Annulée","en livraison", "Livré"].includes(statusCommande)) {
+    if (
+      !["En cours", "Validée", "Annulée", "en livraison", "Livré"].includes(
+        statusCommande
+      )
+    ) {
       return res.status(400).json({ message: "Invalid status!" });
     }
 
@@ -242,7 +245,9 @@ const updateCommandeStatus = async (req, res) => {
       return res.status(404).json({ message: "Commande not found!" });
     }
 
-    res.status(200).json({ message: "Commande status updated!", commande: updatedCommande });
+    res
+      .status(200)
+      .json({ message: "Commande status updated!", commande: updatedCommande });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -266,7 +271,12 @@ const updateCommandeLivreur = async (req, res) => {
       return res.status(404).json({ message: "Commande not found!" });
     }
 
-    res.status(200).json({ message: "Livreur assigned successfully!", commande: updatedCommande });
+    res
+      .status(200)
+      .json({
+        message: "Livreur assigned successfully!",
+        commande: updatedCommande,
+      });
   } catch (error) {
     console.error("Error updating idLivreur:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -291,31 +301,38 @@ const getCommandesWithLivreurNames = async (req, res) => {
   try {
     const commandes = await Commande.find();
 
-    const commandesWithLivreurNames = await Promise.all(commandes.map(async (commande) => {
-      let livreurName = "Non assigné";
+    const commandesWithLivreurNames = await Promise.all(
+      commandes.map(async (commande) => {
+        let livreurName = "Non assigné";
 
-      if (commande.idLivreur && commande.idLivreur !== "-") {
-        try {
-          const response = await axios.get(`http://localhost:8082/api/v1/auth/users/${commande.idLivreur}`);
-          const { firstName, lastName } = response.data;
-          livreurName = `${firstName} ${lastName}`;
-        } catch (err) {
-          console.warn(`Failed to fetch livreur info for ID ${commande.idLivreur}:`, err.message);
+        if (commande.idLivreur && commande.idLivreur !== "-") {
+          try {
+            const response = await axios.get(
+              `http://localhost:8082/api/v1/auth/users/${commande.idLivreur}`
+            );
+            const { firstName, lastName } = response.data;
+            livreurName = `${firstName} ${lastName}`;
+          } catch (err) {
+            console.warn(
+              `Failed to fetch livreur info for ID ${commande.idLivreur}:`,
+              err.message
+            );
+          }
         }
-      }
 
-      return {
-        ...commande.toObject(),
-        livreurName,
-      };
-    }));
+        return {
+          ...commande.toObject(),
+          livreurName,
+        };
+      })
+    );
 
     res.status(200).json(commandesWithLivreurNames);
   } catch (error) {
     console.error("Error fetching commandes with livreur names:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
-};  
+};
 module.exports = {
   createCommande,
   getAllCommandes,
@@ -326,5 +343,5 @@ module.exports = {
   getCommandeByBoutiqueId,
   getCommandeByCommarcentId,
   updateCommandeLivreur,
-  getCommandesWithLivreurNames
+  getCommandesWithLivreurNames,
 };

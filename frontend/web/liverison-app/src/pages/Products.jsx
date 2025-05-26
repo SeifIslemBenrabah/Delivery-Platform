@@ -46,7 +46,7 @@ const Products = () => {
 
   useEffect(() => {
     getProduct(status);
-  }, [status]);
+  }, [status,popup]);
   const handleProductClick = async (id) => {
     await handleProductInfos(id);
     setPopup(true);
