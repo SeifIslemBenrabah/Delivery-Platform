@@ -41,32 +41,32 @@ function App() {
         <Route path="login" element={<Login />} />
         <Route path="registration" element={<Registration />} />
 
-        <Route element={<RequiredAuth allowedRoles={["COMMERCANT"]} />}>
-          <Route path="shopownerhome" element={<ShopOwnerHome />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<DashBoard />} />
-            <Route path="products" element={<ProductsOwner />}>
-              <Route index element={<Navigate to="productslist" replace />} />
-              <Route path="productrequest" element={<ProductRequest />} />
-              <Route path="productslist" element={<ProductsList />} />
-            </Route>
-            <Route path="commands" element={<Commands />}>
-              <Route index element={<Navigate to="commandslist" replace />} />
-              <Route path="commandslist" element={<CommandsList />} />
-              <Route path="commandsdetails" element={<CommandDetails />}>
-                <Route path=":commandId" element={<CommandDetails />} />
-              </Route>
-            </Route>
-            <Route path="shops" element={<ShopsOwner />}>
-              <Route index element={<Navigate to="shopslist" replace />} />
-              <Route path="shopslist" element={<ShopsList />} />
-              <Route path="shopprofile" element={<ShopProfile />}>
-                <Route path=":shopId" element={<ShopProfile />} />
-              </Route>
-            </Route>
-            <Route path="profile" element={<Profile />} />
+        {/* <Route element={<RequiredAuth allowedRoles={["COMMERCANT"]} />}> */}
+        <Route path="shopownerhome" element={<ShopOwnerHome />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<DashBoard />} />
+          <Route path="products" element={<ProductsOwner />}>
+            <Route index element={<Navigate to="productslist" replace />} />
+            <Route path="productrequest" element={<ProductRequest />} />
+            <Route path="productslist" element={<ProductsList />} />
           </Route>
+          <Route path="commands" element={<Commands />}>
+            <Route index element={<Navigate to="commandslist" replace />} />
+            <Route path="commandslist" element={<CommandsList />} />
+            <Route path="commandsdetails" element={<CommandDetails />}>
+              <Route path=":commandId" element={<CommandDetails />} />
+            </Route>
+          </Route>
+          <Route path="shops" element={<ShopsOwner />}>
+            <Route index element={<Navigate to="shopslist" replace />} />
+            <Route path="shopslist" element={<ShopsList />} />
+            <Route path="shopprofile" element={<ShopProfile />}>
+              <Route path=":shopId" element={<ShopProfile />} />
+            </Route>
+          </Route>
+          <Route path="profile" element={<Profile />} />
         </Route>
+        {/* </Route> */}
 
         <Route element={<RequiredAuth allowedRoles={["ADMIN"]} />}>
           <Route path="admin" element={<AdminHome />}>

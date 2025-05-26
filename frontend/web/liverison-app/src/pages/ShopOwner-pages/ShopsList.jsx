@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import shopImg from "../../assets/img/Shop-pic.png";
 import ShopCard from "../../Components/ShopCard";
 import { FiSearch } from "react-icons/fi";
@@ -13,6 +13,7 @@ import { GoLocation } from "react-icons/go";
 import InputLabel from "../../Components/InputLabel";
 import axios from "axios";
 import ShopContext from "../../Context/ShopProvider";
+import mapboxgl from "mapbox-gl";
 
 const ShopsList = () => {
   const [search, setSearch] = useState("");
@@ -20,11 +21,12 @@ const ShopsList = () => {
   const [shopType, setShopType] = useState("");
   const [shopPicture, setShopPicture] = useState("");
   const [shopPapier, setShopPapier] = useState("");
-  const [shopLocation, setShopLocation] = useState("");
-  const [workTime, setWorkTime] = useState("");
+  const [locationName, setlocationName] = useState("");
+
+  const [workTime, setWorkTime] = useState([]);
   const [openShopForm, setOpenShopForm] = useState(false);
   const [shopFormError, setShopFormError] = useState("");
-  const { setShopAdd } = useContext(ShopContext);
+  // const { setShopAdd } = useContext(ShopContext);
   const [shopsList, setShopsList] = useState([
     // {
     //   name: "Shop Name",
@@ -33,12 +35,55 @@ const ShopsList = () => {
     //   picture: `${shopImg}`,
     // },
   ]);
+  mapboxgl.accessToken =
+    "pk.eyJ1IjoiZGluZWlzc2FtIiwiYSI6ImNtOXJpcjJpYjF4NzcybnF1bTRxNDlqOGkifQ.Fyz1JH3Fq-AcFryzEj3uXA";
+
+  const [selectedLocation, setSelectedLocation] = useState({
+    lng: 2.89745,
+    lat: 36.4567,
+    name: "Default Location",
+  });
+  const mapContainerRef = useRef(null);
+
+  // fetching map from mapbox
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    console.log(selectedLocation);
+
+    const map = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: "mapbox://styles/mapbox/streets-v11",
+      center: [selectedLocation.lng, selectedLocation.lat],
+      zoom: 13,
+    });
+
+    // Create marker before using it
+    const marker = new mapboxgl.Marker({ draggable: true })
+      .setLngLat([selectedLocation.lng, selectedLocation.lat])
+      .addTo(map);
+
+    // Click event to move the marker and update state
+    map.on("click", (e) => {
+      const { lng, lat } = e.lngLat;
+      marker.setLngLat([lng, lat]);
+      setSelectedLocation({ lng, lat });
+    });
+
+    // When marker is dragged, update state
+    marker.on("dragend", () => {
+      const { lng, lat } = marker.getLngLat(); // destructure correctly
+      setSelectedLocation({ lng, lat });
+    });
+    console.log("Ref:", mapContainerRef.current);
+
+    return () => map.remove();
+  }, []);
 
   useEffect(() => {
     async function fetchShops() {
       try {
         const responce = await axios.get(
-          `http://localhost:7777/service-commande/boutiques/Commercant/${localStorage.getItem(
+          `http://localhost:5050/boutiques/Commercant/${localStorage.getItem(
             "userId"
           )}`,
           {
@@ -48,6 +93,7 @@ const ShopsList = () => {
           }
         );
         setShopsList(responce?.data);
+        localStorage.setItem("shops", JSON.stringify(shopsList));
         console.log(responce?.data);
       } catch (error) {
         if (error.responce.status === 400) {
@@ -64,7 +110,7 @@ const ShopsList = () => {
     setShopPicture("");
     setShopType("");
     setShopPapier("");
-    setShopLocation("");
+
     setWorkTime("");
   };
   const shopRequestHandler = async () => {
@@ -74,7 +120,6 @@ const ShopsList = () => {
       shopType === "" ||
       shopPapier === "" ||
       shopPicture === "" ||
-      shopLocation === "" ||
       workTime === ""
     ) {
       setShopFormError("You are missing information!");
@@ -178,9 +223,9 @@ const ShopsList = () => {
 
       {/* this is add shop pop up window */}
       {openShopForm && (
-        <div className="fixed inset-0 bg-[#000000a1] flex items-center justify-center gap-2.5 z-10">
-          <div className="bg-white flex flex-col gap-3 w-[400px] py-4 px-4 rounded-[16px] ml-48">
-            <div className="flex justify-between mb-2">
+        <div className=" fixed inset-0 bg-[#000000a1] flex items-center justify-center gap-2.5 z-10 ">
+          <div className="bg-white flex flex-col gap-3 w-[400px] h-[70%]  py-4 px-4 rounded-[16px] ml-48 overflow-auto">
+            <div className="flex justify-between mb-2 ">
               <h1 className=" w-full text-center">Add Shop Request</h1>
               <button
                 onClick={() => {
@@ -207,25 +252,36 @@ const ShopsList = () => {
                 />
               </div>
             </div>
+
             <div className="flex flex-col gap-1">
-              <label htmlFor="" className="text-gray-500 mb-1.5 ">
+              <label
+                htmlFor=""
+                className="flex gap-3 items-center  text-gray-500 mb-1.5 ">
+                <GoLocation className=" text-gray-600" />
                 Shop Location
               </label>
-              <div className="relative bg-white">
-                <GoLocation className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
-                <input
-                  type="text"
-                  placeholder="shop location"
-                  className="pl-10 py-2 border rounded-md w-full"
-                  value={shopName}
-                  onChange={(e) => {
-                    setShopName(e.target.value);
-                  }}
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="Enter the location name"
+                onChange={(e) => setlocationName(e.target.value)}
+                className="w-full py-2 px-2 mb-3 rounded-[8px] border"
+              />
+              <div
+                ref={mapContainerRef}
+                className="w-[100%] h-[300px] rounded-[8px] overflow-hidden border"
+              />
+              {selectedLocation &&
+                selectedLocation.lat !== undefined &&
+                selectedLocation.lng !== undefined && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    Selected: {selectedLocation.lat.toFixed(5)},
+                    {selectedLocation.lng.toFixed(5)}
+                  </p>
+                )}
             </div>
+
             <div className="flex flex-col gap-1">
-              <label htmlFor="" className="text-gray-500 mb-1.5 ">
+              {/* <label htmlFor="" className="text-gray-500 mb-1.5 ">
                 Work Time
               </label>
               <div className="relative bg-white">
@@ -239,7 +295,7 @@ const ShopsList = () => {
                     setShopName(e.target.value);
                   }}
                 />
-              </div>
+              </div> */}
             </div>
             <div className="flex gap-5 justify-between mt-4 items-center">
               <div className="flex items-center gap-2">
@@ -261,26 +317,26 @@ const ShopsList = () => {
                 <BsFileEarmarkPlus className="w-[20px] h-[20px]" />
               </label>
             </div>
-            <div className="flex gap-5 justify-between mt-4 items-center">
-              <div className="flex items-center gap-2">
-                <SlPicture className="text-2xl" />
-                <p className="text-gray-950 font-semibold">Shop Papier :</p>
-              </div>
-              <label className="w-[32px] h-[32px] bg-green-500 flex justify-center items-center rounded text-white cursor-pointer">
-                <input
-                  type="file"
-                  name="Shop Papier"
-                  id=""
-                  className="hidden"
-                  placeholder=" "
-                  value=""
-                  onChange={(e) => {
-                    setShopPapier(e.target.value);
-                  }}
-                />
-                <BsFileEarmarkPlus className="w-[20px] h-[20px]" />
-              </label>
-            </div>
+            {/* <div className="flex gap-5 justify-between mt-4 items-center">
+                <div className="flex items-center gap-2">
+                  <SlPicture className="text-2xl" />
+                  <p className="text-gray-950 font-semibold">Shop Papier :</p>
+                </div>
+                <label className="w-[32px] h-[32px] bg-green-500 flex justify-center items-center rounded text-white cursor-pointer">
+                  <input
+                    type="file"
+                    name="Shop Papier"
+                    id=""
+                    className="hidden"
+                    placeholder=" "
+                    value=""
+                    onChange={(e) => {
+                      setShopPapier(e.target.value);
+                    }}
+                  />
+                  <BsFileEarmarkPlus className="w-[20px] h-[20px]" />
+                </label>
+              </div> */}
             <p className="text-[14px] text-red-500">{shopFormError}</p>
             <button
               onClick={shopRequestHandler}

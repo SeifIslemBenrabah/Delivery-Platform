@@ -47,7 +47,12 @@ const ShopProfile = () => {
 
   const addCatalogueHandler = async () => {
     const res = await axios.post(
-      `http://localhost:5050/boutiques/${shopId}/catalogues`
+      `http://localhost:5050/boutiques/${shopId}/catalogues`,
+      {
+        Headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
     );
     if (newCatalogue === "") {
       setCatalogueError("the Catalogue name field should be filled");

@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import React from "react";
 import { FiSearch } from "react-icons/fi";
 import { NavLink } from "react-router";
 import CommandItem from "../../Components/CommandItem";
+import axios from "axios";
 
 const CommandsList = () => {
   const [search, setSearch] = useState("");
+  const [selectedShop, setSelectedShop] = useState("");
+  const [shopsList, setShopsList] = useState([]);
 
   const [CommandsList, setCommandsList] = useState([
     {
@@ -21,9 +24,37 @@ const CommandsList = () => {
       time: "10:00",
     },
   ]);
+
+  useEffect(() => {
+    async function fetchShops() {
+      try {
+        const responce = await axios.get(
+          `http://localhost:5050/boutiques/Commercant/${localStorage.getItem(
+            "userId"
+          )}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        setShopsList(responce?.data);
+        // localStorage.setItem("shops", JSON.stringify(shopsList));
+        console.log(responce?.data);
+        console.log("hello world is working");
+      } catch (error) {
+        if (error.responce.status === 400) {
+          console.log("error 400");
+        }
+      }
+    }
+    fetchShops();
+  }, []);
+
+  useEffect(() => {});
   return (
     <div>
-      <div className=" flex flex-col gap-5 justify-between items-center  ">
+      <div className=" flex flex-col gap-5 justify-between   ">
         {/* <div className=" w-full flex items-center justify-between "> */}
         {/* <div className="w-[300px] h-[38px] border border-gray-900 rounded-[8px] flex items-center px-2 focus:border-2 focus:border-gray-950 ">
             <input
@@ -74,6 +105,23 @@ const CommandsList = () => {
             </div>
           </div> */}
         {/* </div> */}
+        <select
+          name="shop-select"
+          id="shop-select"
+          className="w-[200px] py-1.5 border rounded-[8px]"
+          onChange={(e) => {
+            setSelectedShop(e.target.value);
+          }}>
+          <option value="">Select shop</option>
+          {shopsList.length !== 0 &&
+            shopsList.map((e) => {
+              return (
+                <option key={e._id} value={e._id}>
+                  {e.nomBoutique}
+                </option>
+              );
+            })}
+        </select>
         <div className="bg-[#f3f3f3] h-fit w-full flex flex-col justify-center items-center gap-1.5 rounded-[16px] pb-4 ">
           <div className="flex justify-between items-center w-full py-4 px-6 ">
             <div className="flex justify-between items-center w-[70%]">

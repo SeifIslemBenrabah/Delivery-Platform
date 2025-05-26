@@ -147,17 +147,25 @@ const ShopDetails = () => {
 
             <div className="flex flex-col items-start">
               <p>Phone Number:</p>
-               <p className="text-lg font-semibold">{shop?.boutique?.phone?shop.boutique.phone :"don't have"}</p> 
+              <p className="text-lg font-semibold">
+                {shop?.boutique?.phone ? shop.boutique.phone : "don't have"}
+              </p>
             </div>
 
             <div className="flex flex-row items-center gap-2">
               <p>Location Address:</p>
-             <p className="text-lg font-semibold">{shop?.boutique?.address?.name?shop?.boutique?.address?.name:"don't have"}</p>
+              <p className="text-lg font-semibold">
+                {shop?.boutique?.address?.name
+                  ? shop?.boutique?.address?.name
+                  : "don't have"}
+              </p>
             </div>
 
             <div className="flex flex-col items-start">
               <p>Registration Date:</p>
-              <p className="text-lg font-semibold">{shop.registrationDate? shop.registrationDate:"26-05-2024"}</p>
+              <p className="text-lg font-semibold">
+                {shop.registrationDate ? shop.registrationDate : "26-05-2024"}
+              </p>
             </div>
 
             <div className="w-full flex flex-row gap-2 justify-end pr-10">
@@ -283,7 +291,6 @@ const ShopDetails = () => {
           </button>
         </div>
       </div>
-    </div>
     </div>
   );
 };

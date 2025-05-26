@@ -18,9 +18,7 @@ const ShopProductCard = ({ image, name, price, description }) => {
           {description}
         </p>
       </div>
-      <button
-        onClick={""}
-        className="bg-green-500 w-[90%] py-1 rounded text-white font-semibold cursor-pointer hover:bg-green-400">
+      <button className="bg-green-500 w-[90%] py-1 rounded text-white font-semibold cursor-pointer hover:bg-green-400">
         More Infos
       </button>
     </div>
