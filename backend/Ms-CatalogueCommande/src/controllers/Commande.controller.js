@@ -198,6 +198,29 @@ const getCommandeByBoutiqueId = async (req,res)=>{
     });
   }
 }
+const getCommandeByCommarcentId = async (req,res)=>{
+  const { commarcentId } = req.params;
+  try{
+    if (!commarcentId) {
+      return res.status(400).json({
+          success: false,
+          message: "Client ID is required"
+      });
+  }
+  const commandes = await Commande.find({ idCommercant: commarcentId }).sort({ date: -1 });
+  res.status(200).json({
+    success: true,
+    data: commandes
+});
+  }catch(error){
+    console.error('Error fetching client commands:', error);
+    res.status(500).json({
+        success: false,
+        message: "Server error while fetching commands",
+        error: error.message
+    });
+  }
+}
 const updateCommandeStatus = async (req, res) => {
   try {
     const { commandeId } = req.params;
@@ -245,5 +268,6 @@ module.exports = {
   updateCommandeStatus,
   deleteCommande,
   getCommandeByClientId,
-  getCommandeByBoutiqueId
+  getCommandeByBoutiqueId,
+  getCommandeByCommarcentId
 };
