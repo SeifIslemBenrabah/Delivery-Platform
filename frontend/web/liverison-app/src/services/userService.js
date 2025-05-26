@@ -34,11 +34,43 @@ export const getuserByRole = async (role) => {
         console.error("Error fetching user:", error);
         throw error;
       }
-  }
+  } 
   export  const activeuser = async (id) =>{
     try{
       const token = localStorage.getItem("token");
-      const res = await axios.get(`http://localhost:8082/api/v1/auth/active/${id}`, {
+      const res = await axios.post(`http://localhost:8082/api/v1/auth/active/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+    
+        return res.data;
+      } catch (error) {
+        console.log("Calling getuserByID with ID:", id);
+        console.error("Error fetching user:", error);
+        throw error;
+      }
+  }
+  export  const refuseDelivery = async (id) =>{
+    try{
+      const token = localStorage.getItem("token");
+      const res = await axios.post(`http://localhost:8082/api/v1/auth/downgrade-from-livreur/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+    
+        return res.data;
+      } catch (error) {
+        console.log("Calling getuserByID with ID:", id);
+        console.error("Error fetching user:", error);
+        throw error;
+      }
+  }
+  export  const refuseCommarcent = async (id) =>{
+    try{
+      const token = localStorage.getItem("token");
+      const res = await axios.post(`http://localhost:8082/api/v1/auth/downgrade-from-commercant/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

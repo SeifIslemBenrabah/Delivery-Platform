@@ -58,6 +58,25 @@ public class AuthenticationController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+    @PostMapping("/downgrade-from-livreur/{userId}")
+public ResponseEntity<String> downgradeFromLivreur(@PathVariable Long userId) {
+    try {
+        service.downgradeFromLivreur(userId);
+        return ResponseEntity.ok("User downgraded from Livreur successfully");
+    } catch (Exception e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+}
+
+@PostMapping("/downgrade-from-commercant/{userId}")
+public ResponseEntity<String> downgradeFromCommercant(@PathVariable Long userId) {
+    try {
+        service.downgradeFromCommercant(userId);
+        return ResponseEntity.ok("User downgraded from Commerçant successfully");
+    } catch (Exception e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+}
 
     @PostMapping("/create-boutique/{userId}")
     public ResponseEntity<?> createBoutique(@PathVariable Long userId, @RequestBody BoutiqueRequest boutiqueRequest) {

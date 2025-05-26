@@ -105,7 +105,31 @@ public class AuthenticationService {
         userRepo.save(user);
        // kafkaPublisher.sendMessage("livreur", "{\"livreurId\":" + user.getId() + "}");
     }
-
+    public void downgradeFromLivreur(Long userId) {
+        var user = userRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    
+        if (user.getLivreur() == null) {
+            throw new RuntimeException("User is not a Livreur");
+        }
+    
+        // Remove LIVREUR role
+        user.getRoles().remove(Role.LIVREUR);
+    
+        // Remove the Livreur entity
+        user.setLivreur(null); // orphanRemoval + cascade will delete the Livreur
+    
+        // Optional: make user active again (or keep false if still under review)
+        user.setActive(true);
+    
+        // Save changes
+        userRepo.save(user);
+    
+        // Optionally send Kafka event
+        // kafkaPublisher.sendMessage("livreur-removed", "{\"userId\":" + user.getId() + "}");
+    }
+    
+    
     public void upgradeToCommercant(Long userId, CommercantRequest commercantRequest) {
         var user = userRepo.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -127,8 +151,31 @@ public class AuthenticationService {
 
 
     }
-
-
+    
+    public void downgradeFromCommercant(Long userId) {
+        var user = userRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    
+        if (user.getCommercant() == null) {
+            throw new RuntimeException("User is not a Commercant");
+        }
+    
+        // Remove COMMERCANT role
+        user.getRoles().remove(Role.COMMERCANT);
+    
+        // Remove Commercant entity via JPA orphanRemoval
+        user.setCommercant(null);
+    
+        // Optional: Reactivate user
+        user.setActive(true);
+    
+        // Save changes
+        userRepo.save(user);
+    
+        // Optional: notify via Kafka
+        // kafkaPublisher.sendMessage("commercant-removed", "{\"userId\":" + user.getId() + "}");
+    }
+    
     public void setWorkingHours(Long userId, Long boutiqueId, List<HeuresTravailRequest> horaires) {
         Boutique boutique = boutiqueRepo.findById(boutiqueId)
                 .orElseThrow(() -> new RuntimeException("Boutique not found"));

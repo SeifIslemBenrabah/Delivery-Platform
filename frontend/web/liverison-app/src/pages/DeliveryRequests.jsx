@@ -1,13 +1,10 @@
 import React ,{useEffect, useState}from 'react';
 import { useNavigate } from 'react-router-dom';
-import {getuserByRole} from "../services/userService"
-import {getuserByID,activeuser } from '../services/userService'
+import {getuserByRole ,activeuser,getuserByID,refuseDelivery} from "../services/userService"
 import profile from "../assets/img/profile.png"
 const DeliveryRequests = () => {
   const navigate = useNavigate();
-  const handleMoreInfo = (id) => {
-    navigate(`/Admin/client/${id}`); // 3. Navigate to client details page
-  };
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [popup, setPopup] = useState(false);
@@ -38,11 +35,16 @@ const DeliveryRequests = () => {
         image: "https://randomuser.me/api/portraits/men/3.jpg"
       }
     ])
-    const handleUpdate = async () => {
+    const handleUpdate = async (status) => {
       try {
-        await activeuser(selectedShop.id);
+        if(status){
+          await activeuser(selectedUser.id);
+        }
+        if(!status){
+          await refuseDelivery(selectedUser.id)
+        }
         // console.log(selectedShop._id)
-        // setPopup(false);
+        setPopup(false);
         
         // setShops((prev) => prev.filter((shop) => shop._id !== selectedShop._id));
       } catch (error) {
@@ -68,7 +70,7 @@ const DeliveryRequests = () => {
           }
         }
         getClients();
-      },[])
+      },[popup])
       const handlegetuserInfos = async (id) =>{
         try{
           
@@ -223,13 +225,13 @@ const DeliveryRequests = () => {
   {/* Buttons */}
   <div className="flex justify-end gap-3 pt-4">
     <button
-      onClick={() => handleUpdate('refuse')}
+      onClick={() => handleUpdate(false)}
       className="bg-red-500 text-white hover:bg-gray-300 text-g px-4 py-2 rounded-md"
     >
       Refuse
     </button>
     <button
-      onClick={() => handleUpdate('accepte')}
+      onClick={() => handleUpdate(true)}
       className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
     >
       Accept

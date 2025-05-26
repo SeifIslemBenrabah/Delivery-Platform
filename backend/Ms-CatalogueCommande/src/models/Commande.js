@@ -22,7 +22,9 @@ const CommandeSchema = new Schema({
         quantity: { type: Number, required: true, min: 1 }
     }],
     idBoutique: { type: String, ref: "Boutique", required: true },
-    idCommercant: { type: String, required: true }
+    idCommercant: { type: String, required: true },
+    price: { type: Number, required: true },
+    idLivreur: { type: String ,default: "-"}
 });
 
 

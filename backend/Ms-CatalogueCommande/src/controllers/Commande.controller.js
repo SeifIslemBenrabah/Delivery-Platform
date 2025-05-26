@@ -56,6 +56,7 @@ const createCommande = async (req, res) => {
     const formattedProduits = [];
     let expectedBoutiqueId = "";
     let idCommercant = null;
+    let totalPrice = 0;
 
     for (const item of produits) {
       const { produit, quantity, infos } = item;
@@ -82,7 +83,7 @@ const createCommande = async (req, res) => {
       } else if (expectedBoutiqueId !== boutique._id) {
         return res.status(400).json({ message: "All products must belong to the same boutique." });
       }
-
+      totalPrice += productDoc.price * quantity;
       formattedProduits.push({
         produit: new mongoose.Types.ObjectId(produit),
         quantity,
@@ -98,7 +99,8 @@ const createCommande = async (req, res) => {
       idClient,
       produits: formattedProduits,
       idBoutique: expectedBoutiqueId,
-      idCommercant
+      idCommercant,
+      price: totalPrice 
     });
 
     await newCommande.save();
@@ -226,7 +228,7 @@ const updateCommandeStatus = async (req, res) => {
     const { commandeId } = req.params;
     const { statusCommande } = req.body;
 
-    if (!["En cours", "Validée", "Annulée"].includes(statusCommande)) {
+    if (!["En cours", "Validée", "Annulée","en livraison", "Livré"].includes(statusCommande)) {
       return res.status(400).json({ message: "Invalid status!" });
     }
 
@@ -245,6 +247,31 @@ const updateCommandeStatus = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+const updateCommandeLivreur = async (req, res) => {
+  try {
+    const { commandeId } = req.params;
+    const { idLivreur } = req.body;
+
+    if (!idLivreur || typeof idLivreur !== "string") {
+      return res.status(400).json({ message: "Invalid or missing idLivreur!" });
+    }
+
+    const updatedCommande = await Commande.findByIdAndUpdate(
+      commandeId,
+      { idLivreur },
+      { new: true }
+    );
+
+    if (!updatedCommande) {
+      return res.status(404).json({ message: "Commande not found!" });
+    }
+
+    res.status(200).json({ message: "Livreur assigned successfully!", commande: updatedCommande });
+  } catch (error) {
+    console.error("Error updating idLivreur:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
 
 const deleteCommande = async (req, res) => {
   try {
@@ -260,7 +287,35 @@ const deleteCommande = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+const getCommandesWithLivreurNames = async (req, res) => {
+  try {
+    const commandes = await Commande.find();
 
+    const commandesWithLivreurNames = await Promise.all(commandes.map(async (commande) => {
+      let livreurName = "Non assigné";
+
+      if (commande.idLivreur && commande.idLivreur !== "-") {
+        try {
+          const response = await axios.get(`http://localhost:8082/api/v1/auth/users/${commande.idLivreur}`);
+          const { firstName, lastName } = response.data;
+          livreurName = `${firstName} ${lastName}`;
+        } catch (err) {
+          console.warn(`Failed to fetch livreur info for ID ${commande.idLivreur}:`, err.message);
+        }
+      }
+
+      return {
+        ...commande.toObject(),
+        livreurName,
+      };
+    }));
+
+    res.status(200).json(commandesWithLivreurNames);
+  } catch (error) {
+    console.error("Error fetching commandes with livreur names:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};  
 module.exports = {
   createCommande,
   getAllCommandes,
@@ -269,5 +324,7 @@ module.exports = {
   deleteCommande,
   getCommandeByClientId,
   getCommandeByBoutiqueId,
-  getCommandeByCommarcentId
+  getCommandeByCommarcentId,
+  updateCommandeLivreur,
+  getCommandesWithLivreurNames
 };

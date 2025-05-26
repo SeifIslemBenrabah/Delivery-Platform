@@ -12,7 +12,6 @@ export const fetchBoutiques = async () => {
         Authorization: `Bearer ${token}`,
       }
     });
-
     return response.data;
   } catch (error) {
     console.error("Error fetching boutiques:", error);
