@@ -8,21 +8,14 @@ import axios from "axios";
 
 const ProductsList = () => {
   const [search, setSearch] = useState("");
-  const [cataloges, setCatalogues] = useState();
-  const [selectedShop, setSelectedShop] = useState("");
-  const [selectedCatalogue, setSelectedCatalogue] = useState("");
+  const [shopCataloges, setShopCatalogues] = useState([]);
+  const [selectedShop, setSelectedShop] = useState("all");
+  const [selectedCatalogue, setSelectedCatalogue] = useState('');
   // const shopsList = JSON.parse(localStorage.getItem("shops"));
   const [shopsList, setShopsList] = useState([]);
 
   //   const [productWindow , setProductWindow] =
-  const productList = [
-    {
-      image: `${productImage}`,
-      name: "Nike Shos",
-      price: 3000,
-      description: "Sport pair of shos with not heavy weight ...",
-    },
-  ];
+  const [productList , setProductList] = useState([]); 
 
   useEffect(() => {
     async function fetchShops() {
@@ -54,13 +47,67 @@ const ProductsList = () => {
     async function fetchCataloguesByShop() {
       shopsList.map((e) => {
         if (e._id === selectedShop) {
-          setCatalogues(e.catalogues);
-          console.log("the catalogues are loaded..");
+          setShopCatalogues(e.catalogues);
+          console.log(e.catalogues);
         }
       });
     }
-    fetchCataloguesByShop();
+    fetchCataloguesByShop();  
   }, [selectedShop]);
+
+  useEffect(()=>{
+    async function getProducts() {
+      try {
+        let responce;
+        if(selectedShop === 'all'){
+          responce = await axios.get(
+            `http://localhost:5050/products/Commercant/${localStorage.getItem(
+              "userId"
+            )}`,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            }
+          );
+          // setProductList(responce?.data)
+          // console.log(responce.data)
+        }else{
+          if(selectedCatalogue === ''){
+             responce = await axios.get(
+              `http://localhost:5050/products/boutique/${selectedShop}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+              }
+            );
+            // setProductList(responce?.data)
+            // console.log(responce?.data)
+          }else{
+             responce = await axios.get(
+              `http://localhost:5050/boutiques/${selectedShop}/catalogues/${selectedCatalogue}/produits`,
+              {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+              }
+            );
+            // setProductList(responce?.data)
+          }
+        }
+        if(Array.isArray(responce)){
+          setProductList(responce);
+        }else{
+          setProductList([]);
+        }
+      } catch (error) {
+        console.log(error)
+        setProductList([]);
+      }
+    }
+    getProducts();
+  },[selectedCatalogue , selectedShop])
   return (
     <div>
       <div className="flex justify-between items-center ">
@@ -79,14 +126,14 @@ const ProductsList = () => {
             <FiSearch className="text-xl" />
           </div>
           <select
-            name="catalogue-select"
-            id="catalogue-select"
+            name="shop-select"
+            id="shop-select"
             className="w-[200px] py-1.5 border rounded-[8px]"
             onChange={(e) => {
               setSelectedShop(e.target.value);
             }}>
-            <option value="">Select shop</option>
-            {shopsList.length !== 0 &&
+            <option value="all">Select shop</option>
+            {
               shopsList.map((e) => {
                 return (
                   <option key={e._id} value={e._id}>
@@ -98,9 +145,14 @@ const ProductsList = () => {
           <select
             name="catalogue-select"
             id="catalogue-select"
-            className="w-[200px] py-1.5 border rounded-[8px]">
+            className="w-[200px] py-1.5 border rounded-[8px]"
+            onChange={(e)=>{setSelectedCatalogue(e.target.value)}}>
             <option value="">Select Catalogue</option>
-            {}
+            { 
+              shopCataloges.map((e)=>{
+                return(<option key={e._id} value={e._id}>{e.nomCatalogue}</option>)
+              })
+            }
           </select>
         </div>
         <button className="bg-gray-950 text-white text-[16px] w-[160px]  pt-1.5 pb-1.5 rounded flex gap-2.5 justify-center items-center hover:bg-gray-900 cursor-pointer">
@@ -112,13 +164,14 @@ const ProductsList = () => {
           </NavLink>
         </button>
       </div>
-      <div className="w-full grid-cols-6 gap-2.5  my-6">
-        {productList.map((e, i) => {
+      <div className="w-full grid grid-cols-8 gap-2.5  my-6">
+        { 
+        productList.map((e) => {
           return (
             <ShopProductCard
-              key={i}
-              image={e.image}
-              name={e.name}
+              key={e._id}
+              image={e.photoProduit}
+              name={e.nomProduit}
               price={e.price}
               description={e.description}
             />

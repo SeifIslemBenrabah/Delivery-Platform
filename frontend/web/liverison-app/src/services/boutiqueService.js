@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const API_URL = "http://localhost:5050/boutiques";
-localStorage.setItem("token","eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJhZG1pbkBnbWFpbC5jb20iLCJpYXQiOjE3NDgxOTM1NjUsImV4cCI6MTc0ODI3OTk2NX0.wBfkyMwOJBQsHNFj7M9HwRBf-WixbhumonELWXdwOAk")
+localStorage.setItem("token","eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDTElFTlQiXSwic3ViIjoiYWJkb3VAZ21haWwuY29tIiwiaWF0IjoxNzQ4MjgxMTQ0LCJleHAiOjE3NDgzNjc1NDR9.OS0ANQJwYz3JNohS0U5aZvqWJ_CiEqU4bt8r260hmpU")
 export const fetchBoutiques = async () => {
   try {
     const token = localStorage.getItem("token");

@@ -9,7 +9,9 @@ const {
   updateProduit,
   deleteProduit,
   getProduitBySearch,
-  productstatusupdate
+  productstatusupdate,
+  getProduitByIdBoutique,
+  getProduitByIdCommarcent
 } = require("../controllers/product.controller");
 
 router.post("/", auth(),upload.single("photoProduit"), addProduit);
@@ -19,6 +21,8 @@ router.get("/name",  auth(),getProduitBySearch);
 router.get("/:id", auth(), getProduitById);
 router.put("/:id", auth(), updateProduit);
 
+router.get("/boutique/:boutiqueId",auth(),getProduitByIdBoutique)
+router.get("/Commarcent/:commarcentId",auth(),getProduitByIdCommarcent)
 router.delete("/:id", auth(), deleteProduit);
 router.put('/status/:id', auth(), productstatusupdate)
 module.exports = router;

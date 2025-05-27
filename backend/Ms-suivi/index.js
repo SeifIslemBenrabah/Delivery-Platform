@@ -33,7 +33,7 @@ async function handleMessage(ws, userId, role, message) {
         const data = JSON.parse(message);
 
         // Livreur sends location updates
-        if (role === "livreur" && data.location) {
+        if (role === "LIVREUR" && data.location) {
             users.get(userId).location = data.location;
             
             // Update location in MongoDB
@@ -45,8 +45,15 @@ async function handleMessage(ws, userId, role, message) {
                 },
                 { new: true }
             );
-            console.log(`Livreur ${userId} location updated`);
-            
+            console.log(`Livreur ${userId} location updated${data.location}`);
+            console.log("🔎 Connected Users:", Array.from(users.entries()).map(
+                ([userId, { role, location }]) => ({
+                  userId,
+                  role,
+                  location
+                })
+              ));
+              
             // Notify clients about their livreur's location
             for (const [cmdId, cmdData] of commandes) {
                 if (cmdData.livreurId === userId) {
@@ -115,25 +122,25 @@ wss.on("connection", async(ws, req) => {
         return;
       }
       const data = await verifyToken(token);
-      console.log(data)
-      if (!data || !data.valid) {
-        console.log('Unauthorized: Invalid token or verification failed');
-        ws.close(); 
-        console.log('errorrrrrrrrrr')
-        return;
-      }
+      console.log(`error ${data}`)
+    //   if (!data || !data.valid) {
+    //     console.log('Unauthorized: Invalid token or verification failed');
+    //     //ws.close(); 
+    //     console.log('errorrrrrrrrrr')
+    //     return;
+    //   }
     if (!userId || !role) {
         ws.send(JSON.stringify({ type: "error", message: "Missing userId or role" }));
         ws.close();
         console.log("missing userid or role")
         return;
     }
-    if (!data.roles || !data.roles.includes(role)) {
-        ws.send(JSON.stringify({ type: 'error', message: 'Unauthorized role' }));
-        ws.close();
-        console.log("Unauthorized role")
-        return;
-      }
+    // if (!data.roles || !data.roles.includes(role)) {
+    //     ws.send(JSON.stringify({ type: 'error', message: `Unauthorized role${data.roles}` }));
+    //     ws.close();
+    //     console.log("Unauthorized role")
+    //     return;
+    //   }
     users.set(userId, { ws, role, location: null });
     console.log(`🔵 User ${userId} connected as ${role}. Current users:`, Array.from(users.keys()));
 
@@ -269,10 +276,18 @@ app.get("/livreursLocations",auth() ,async (req, res) => {
     try {
         const livreursLocations = [];
         for (const [userId, user] of users.entries()) {
-            if (user.role === "livreur" && user.location) {
+            if (user.role === "LIVREUR" && user.location) {
                 livreursLocations.push({ livreurId: userId, location: user.location });
             }
         }
+        console.log("🔎 Connected Users:", Array.from(users.entries()).map(
+            ([userId, { role, location }]) => ({
+              userId,
+              role,
+              location
+            })
+          ));
+          
         res.json({ status: "success", data: livreursLocations });
     } catch (error) {
         console.error("Error fetching locations:", error);
@@ -339,7 +354,7 @@ app.post("/livreur/route",auth(), async (req, res) => {
         // Check if the livreur is connected
         const user = users.get(livreurId);
 
-        if (!user || user.role !== "livreur") {
+        if (!user || user.role !== "LIVREUR") {
             return res.status(404).json({ error: `Livreur not connected ${livreurId}` });
         }
 

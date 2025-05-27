@@ -168,6 +168,40 @@ const getProduitByIdCatalogue = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+const getProduitByIdBoutique = async(req,res)=>{
+  try {
+    const { boutiqueId } = req.params;
+    const boutique = await Boutique.findById(boutiqueId);
+    if (!boutique) {
+      return res.status(404).json({ msg: "Boutique not found." });
+    }
+    const produits = await Produit.find({ idBoutique:boutiqueId });
+
+    if (produits.length === 0) {
+      return res.status(200).json({ message: "No products found in this catalog." });
+    }
+
+    return res.status(200).json(produits);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+}
+const getProduitByIdCommarcent = async(req,res)=>{
+  try {
+    const { commarcentId } = req.params;
+    const produits = await Produit.find({ idCommercant:commercentId });
+
+    if (produits.length === 0) {
+      return res.status(200).json({ message: "No products found in this catalog." });
+    }
+
+    return res.status(200).json(produits);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+}
 const updateProduit = async (req, res) => {
     try {
       if (!req.user.roles.includes('COMMERCANT')) {
@@ -239,5 +273,7 @@ module.exports = {
   deleteProduit,
   getProduitBySearch,
   getProduitByIdCatalogue,
-  productstatusupdate
+  productstatusupdate,
+  getProduitByIdBoutique,
+  getProduitByIdCommarcent
 };

@@ -1,7 +1,6 @@
 import axios from "axios";
-
+localStorage.setItem("token","eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDTElFTlQiXSwic3ViIjoiYWJkb3VAZ21haWwuY29tIiwiaWF0IjoxNzQ4MjgxMTQ0LCJleHAiOjE3NDgzNjc1NDR9.OS0ANQJwYz3JNohS0U5aZvqWJ_CiEqU4bt8r260hmpU")
 const API_URL = "http://localhost:8082/api/v1/auth/users-by-role";
-localStorage.setItem("token","eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJhZG1pbkBnbWFpbC5jb20iLCJpYXQiOjE3NDgxOTM1NjUsImV4cCI6MTc0ODI3OTk2NX0.wBfkyMwOJBQsHNFj7M9HwRBf-WixbhumonELWXdwOAk")
 export const getuserByRole = async (role) => {
     try {
       const token = localStorage.getItem("token")

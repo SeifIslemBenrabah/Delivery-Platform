@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState , useRef} from "react";
 import InputLabel from "../../Components/InputLabel";
 import { TbSquareArrowLeft } from "react-icons/tb";
 import { IoPricetagsOutline } from "react-icons/io5";
@@ -9,20 +9,27 @@ import { AiOutlinePlusCircle } from "react-icons/ai";
 import { FaArrowRight, FaTrash, FaRegCircleXmark } from "react-icons/fa6";
 import { LuCircleMinus } from "react-icons/lu";
 import { NavLink } from "react-router";
+import axios from "axios";
 
 const ProductRequest = () => {
   const [productName, setProductName] = useState("");
   const [productPrice, setProductPrice] = useState("");
   const [description, setDescription] = useState("");
-  const [productPicture, setProductPicture] = useState("");
+  //const [productPicture, setProductPicture] = useState("");
+  const productPictureRef = useRef(null); // this replaces setProductPicture
   const [features, setFeatures] = useState([]);
   const [featureWindow, setFeatureWindow] = useState(false);
   const [featureInputs, setFreatureInputs] = useState([]);
   const [newFeature, setNewFeature] = useState("");
   const [featureError, setFeatureError] = useState("");
   const [fromError, setFormError] = useState("");
-  const [success, setSuccess] = useState(false);
-
+  // const [success, setSuccess] = useState(false);
+  const [selectedShop, setSelectedShop] = useState(null);
+  const [selectedCatalogue, setSelectedCatalogue] = useState(null);
+  const [shopsList, setShopsList] = useState([]);
+  const [shopCataloges, setShopCatalogues] = useState([]);
+  const [productStock , setProductStock] = useState(null);
+  localStorage.setItem("token","eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDTElFTlQiXSwic3ViIjoiYWJkb3VAZ21haWwuY29tIiwiaWF0IjoxNzQ4MjgxMTQ0LCJleHAiOjE3NDgzNjc1NDR9.OS0ANQJwYz3JNohS0U5aZvqWJ_CiEqU4bt8r260hmpU")
   const addInputs = () => {
     setFreatureInputs([...featureInputs, ""]);
   };
@@ -69,6 +76,81 @@ const ProductRequest = () => {
     setFreatureInputs(updateInputs);
   };
 
+ 
+    async function postProduct() {
+      try {
+        const formData = new FormData();
+        formData.append("nomProduit", productName);
+        formData.append("price", productPrice);
+        formData.append("description", description);
+        formData.append("stock", productStock);
+        // formData.append("photoProduit", productPicture); // this is a File object!
+        formData.append("photoProduit", productPictureRef.current);
+        formData.append("idCommercant", localStorage.getItem("userId"));
+        formData.append("Catalogueid", selectedCatalogue);
+        formData.append("Boutiqueid", selectedShop);
+        const response = await axios.post(
+          `http://localhost:5050/products`,formData, 
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        );
+        console.log("Product added successfully:", response.data);
+        setProductName('');
+        setProductPrice('');
+        productPictureRef.current = null ;
+        setProductStock('')
+        setFeatures([]);
+        setDescription('');
+        // setSelectedCatalogue(null);
+        // setSelectedShop(null)
+      } catch (error) {
+        console.error("Error posting product:", error);
+      }
+    }
+  
+    
+  
+  
+
+  useEffect(() => {
+    async function fetchShops() {
+      try {
+        const responce = await axios.get(
+          `http://localhost:5050/boutiques/Commercant/${localStorage.getItem(
+            "userId"
+          )}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        setShopsList(responce?.data);
+        // localStorage.setItem("shops", JSON.stringify(shopsList));
+        console.log(responce?.data);
+        console.log("hello world is working");
+      } catch (error) {
+        if (error.responce.status === 400) {
+          console.log("error 400");
+        }
+      }
+    }
+    fetchShops();
+    async function fetchCataloguesByShop() {
+      shopsList.map((e) => {
+        if (e._id === selectedShop) {
+          setShopCatalogues(e.catalogues);
+          console.log(e.catalogues);
+        }
+      });
+    }
+    fetchCataloguesByShop();  
+  }, [selectedShop]);
+
   return (
     <>
       <div className="flex flex-col w-full">
@@ -99,13 +181,26 @@ const ProductRequest = () => {
                 inputName="Product Price*(Da)"
                 errorMassage=""
                 value={productPrice}
-                name="name"
+                name="price"
                 onchange={(e) => {
                   setProductPrice(e.target.value);
                 }}
                 affiche={false}
               />
             </div>
+            <div className="flex gap-4 w-[70%]">
+              <InputLabel
+                icon={RiMoneyDollarCircleLine}
+                type="number"
+                inputName="Product Stock"
+                errorMassage=""
+                value={productPrice}
+                name="stock"
+                onchange={(e) => {
+                  setProductStock(e.target.value);
+                }}
+                affiche={false}
+              /></div>
             <div className="flex gap-4 w-full">
               <div className="flex flex-col w-[49%] gap-2.5">
                 <p>Description*</p>
@@ -129,22 +224,28 @@ const ProductRequest = () => {
                   </p>
                 </div>
                 <label className="w-[32px] h-[32px] bg-green-500 flex justify-center items-center rounded text-white cursor-pointer">
-                  <input
-                    type="file"
-                    name="national card"
-                    id=""
-                    className="hidden"
-                    placeholder=" "
-                    value={productPicture}
-                    onChange={(e) => {
-                      setProductPicture(e.target.value);
-                    }}
-                  />
+                <input
+  type="file"
+  name="photoProduit"
+  className="hidden"
+  // onChange={(e) => {
+  //   setProductPicture(e.target.files[0]);
+  // }}
+  onChange={(e) => {
+    const file = e.target.files[0];
+    if (file) {
+      productPictureRef.current = file;
+    }
+  }}
+  
+/>
+
                   <BsFileEarmarkPlus className="w-[20px] h-[20px]" />
                 </label>
               </div>
             </div>
-            <div className="flex flex-col gap-4 w-[50%] mt-4">
+            <div className="flex justify-between mt-4">
+            <div className="flex flex-col gap-4 w-[50%] ">
               <div className="flex items-center justify-between w-full pr-2.5">
                 <p className="text-[18px] text-gray-950">Features</p>
                 <button
@@ -176,11 +277,45 @@ const ProductRequest = () => {
                   );
                 })}
               </div>
+              
               {/* set error message here  */}
               <p className="text-red-500">{fromError}</p>
             </div>
+            <div className="w-[50%] h-fit  flex gap-2">
+            <select
+            name="shop-select"
+            id="shop-select"
+            className="w-[45%] py-1.5 border rounded-[8px]"
+            onChange={(e) => {
+              setSelectedShop(e.target.value);
+            }}>
+            <option value="">Select shop</option>
+            {
+              shopsList.map((e) => {
+                return (
+                  <option key={e._id} value={e._id}>
+                    {e.nomBoutique}
+                  </option>
+                );
+              })}
+          </select>
+          <select
+            name="catalogue-select"
+            id="catalogue-select"
+            className="w-[45%] py-1.5 border rounded-[8px]"
+            onChange={(e)=>{setSelectedCatalogue(e.target.value)}}>
+            <option value="">Select Catalogue</option>
+            { 
+              shopCataloges.map((e)=>{
+                return(<option key={e._id} value={e._id}>{e.nomCatalogue}</option>)
+              })
+            }
+          </select>
+          </div>
+            </div>
             <div className="flex w-full justify-center">
-              <button className="flex justify-between items-center w-[40%] bg-green-500 px-4 py-2 rounded text-white my-5 cursor-pointer hover:bg-green-400 ">
+              <button className="flex justify-between items-center w-[40%] bg-green-500 px-4 py-2 rounded text-white my-5 cursor-pointer hover:bg-green-400 "
+              onClick={()=>postProduct()}>
                 Send Request <FaArrowRight />
               </button>
             </div>

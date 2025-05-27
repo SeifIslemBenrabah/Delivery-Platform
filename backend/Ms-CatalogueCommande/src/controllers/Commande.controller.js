@@ -4,6 +4,37 @@ const { Boutique } = require("../models/Boutique");
 require("dotenv").config();
 const mongoose = require("mongoose");
 const axios = require("axios");
+const { Eureka } = require('eureka-js-client');
+//const client = require('../index')
+const PORT = process.env.PORT || 5050;
+const client = new Eureka({
+  instance: {
+    app: 'ms-commande',
+    hostName: 'localhost',
+    ipAddr: '127.0.0.1',
+    port: {
+      '$': PORT,
+      '@enabled': true
+    },
+    vipAddress: 'ms-commande',
+    dataCenterInfo: {
+      '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
+      name: 'MyOwn',
+    },
+  },
+  eureka: {
+    host: 'localhost',
+    port: 8888,
+    servicePath: '/eureka/apps/',
+  },
+});
+client.start((error) => {
+  if (error) {
+    console.error('Eureka registration failed:', error);
+  } else {
+    console.log('Registered with Eureka!');
+  }
+});
 async function getUserDetails(userId) {
   try {
     const response = await axios.get(`http://localhost:5001/users/${userId}`);

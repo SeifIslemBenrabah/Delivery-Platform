@@ -25,6 +25,11 @@ const InputLabel = ({
         <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
         <input
           type={type}
+          min='0'
+          onKeyDown={(e) => {
+            if (e.key === '-' || e.key === 'e') {
+              e.preventDefault();
+            }}}
           placeholder={name}
           className="pl-10 py-2 border rounded-md w-full"
           onChange={onchange}

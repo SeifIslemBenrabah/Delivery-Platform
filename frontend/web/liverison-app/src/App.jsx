@@ -32,6 +32,7 @@ import MerchantDetails from "./pages/MerchantDetails";
 import ShopDetails from "./pages/ShopDetails";
 import ShopRequests from "./pages/ShopRequests";
 import MerchantRequests from "./pages/MerchantRequests";
+import AddShop from "./pages/ShopOwner-pages/AddShop";
 function App() {
   return (
     <>
@@ -59,6 +60,7 @@ function App() {
           <Route path="shops" element={<ShopsOwner />}>
             <Route index element={<Navigate to="shopslist" replace />} />
             <Route path="shopslist" element={<ShopsList />} />
+            <Route path="add-shop" element={<AddShop />} />
             <Route path="shopprofile" element={<ShopProfile />}>
               <Route path=":shopId" element={<ShopProfile />} />
             </Route>
@@ -79,6 +81,7 @@ function App() {
             <Route path="MerchantRequests" element={<MerchantRequests />} />
             <Route path="Merchant/:id" element={<MerchantDetails />} />
             <Route path="shops" element={<Shops />} />
+            
             <Route path="ShopRequests" element={<ShopRequests />} />
             <Route path="shop/:id" element={<ShopDetails />} />
             <Route path="products" element={<Products />} />

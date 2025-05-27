@@ -11,8 +11,8 @@ function auth() {
       }
 
       const token = authHeader.split(' ')[1];
-      const url = `${getServiceUrl('MS-GATEWAY')}/service-user/api/v1/auth/verify-token`;
-
+      //const url = `${getServiceUrl('MS-GATEWAY')}/service-user/api/v1/auth/verify-token`;
+      const url = `http://localhost:8082/api/v1/auth/verify-token`
       const response = await fetch(url, {
         method: 'POST',
         headers: {
