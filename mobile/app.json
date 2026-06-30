@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Delivery Platform",
+    "slug": "delivery-platform",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "delivery",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2563eb"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.deliveryplatform.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Nécessaire pour le suivi en temps réel des livraisons.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Nécessaire pour le suivi en temps réel des livraisons."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2563eb"
+      },
+      "package": "com.deliveryplatform.app",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "ACCESS_BACKGROUND_LOCATION"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Nécessaire pour le suivi de livraison."
+        }
+      ]
+    ]
+  }
+}

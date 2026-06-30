@@ -1,0 +1,48 @@
+server:
+  port: 3001
+
+spring:
+  application:
+    name: ms-utilisateur
+
+  datasource:
+    url: ${MS_USER_DATABASE_URL:jdbc:mysql://localhost:3306/dp_users?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_ROOT_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+jwt:
+  secret: ${JWT_SECRET:super-secret-key-at-least-64-characters-long-for-hs256-algorithm}
+  access-token-expiration: 900000      # 15 minutes in ms
+  refresh-token-expiration: 604800000  # 7 days in ms
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
+
+logging:
+  level:
+    com.deliveryplatform: DEBUG
+    org.springframework.security: WARN
